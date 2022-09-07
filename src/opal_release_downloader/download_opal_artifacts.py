@@ -168,7 +168,7 @@ def validate_release_format(tag: str) -> bool:
     return True
 
 def run_downloader():
-    parser = argparse.ArgumentParser(help='Download OPAL artifacts')
+    parser = argparse.ArgumentParser(description='Download OPAL artifacts')
     parser.add_argument('bucket_name', help='Name of S3 bucket in which OPAL artifacts reside')
     parser.add_argument('release_tag', help='OPAL release tag to be downloaded, in YYYY.MM.DD form')
     parser.add_argument('--no-docker', help='Do not download binaries for docker', 

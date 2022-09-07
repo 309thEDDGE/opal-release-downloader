@@ -15,7 +15,7 @@ Obtain and verify all artifacts required to deploy OPAL
 
 ## Install
 
-`pip install https://github.com/IM-USAF/opal-release-downloader`
+`pip install git+https://github.com/IM-USAF/opal-release-downloader.git`
 
 ## Usage
 

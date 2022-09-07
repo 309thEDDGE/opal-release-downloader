@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import pathlib
 import os
 import argparse
@@ -140,7 +141,6 @@ class artifact_downloader():
         return hasher.hexdigest()
 
 
-
 # Simple function to run a yes/no input when user is tasked with a choice
 def yes_no():
     valid_input = False
@@ -192,6 +192,3 @@ def run_downloader():
         if not args.no_rhel:
             dl.download_rhel_iso()
 
-# Main function to start the process of user input for downloading source files from s3 bucket
-if __name__=="__main__":
-    

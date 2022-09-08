@@ -80,7 +80,11 @@ class artifact_downloader():
     # download from
     def download_files(self, s3_dir):
         for item in self.s3.list_objects_v2(Bucket=self.bucket_name,Prefix=s3_dir)['Contents']:
-            print(f"  - {item['Key'].split('/')[-1]}")
+            file_name = item['Key'].split('/')[-1]
+            print(f"  - {file_name}")
+            if pathlib.Path(file_name).is_file():
+                print(f"  - {file_name} already exists. skipping.")
+                continue
             try:
                 self.s3.download_file(self.bucket_name,item['Key'],item['Key'].split('/')[-1])
             except Exception as e:
@@ -124,7 +128,6 @@ class artifact_downloader():
         except Exception as e:
             print(str(e))
             exit(1)
-        
             
 
     # This function will generate a checksum for a specific file to be later validated against a known list of working checksums
@@ -134,10 +137,14 @@ class artifact_downloader():
         #create hash object and use hashlib.md5() function to generate the hashsum
         hasher = hashlib.md5()
         #need to open the file and read the contents while passing them to the hash object 
+        read_size_byte = int(100e6)
         with open(filename, 'rb') as open_file:
-            #store contents of open file
-            content = open_file.read()
-            hasher.update(content)
+            observed_read_size = read_size_byte
+            while observed_read_size == read_size_byte:
+                #store contents of open file
+                content = open_file.read(read_size_byte)
+                hasher.update(content)
+                observed_read_size = len(content)
         return hasher.hexdigest()
 
 

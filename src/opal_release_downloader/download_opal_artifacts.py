@@ -50,7 +50,6 @@ class artifact_downloader():
         os.chdir(self.downloaded_artifact_path)
         print("\n ------ Downloading Scripts ------")
         self.download_files("unpacker")
-        self.download_files("load-docker-images")
         print(" === Scripts successfully downloaded ===")
 
     # downloads docker and docker-compose binaries

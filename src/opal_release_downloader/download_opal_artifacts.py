@@ -18,7 +18,7 @@ class artifact_downloader():
         self.release_tag=release_tag
         self.bucket_name=bucket_name
         self.working_dir = pathlib.Path('.').resolve()
-        self.downloaded_artifact_path = self.working_dir / "artifacts"
+        self.downloaded_artifact_path = self.working_dir / "opal_artifacts"
         self.image_path = self.downloaded_artifact_path / "images"
         self.docker_binary_path = self.downloaded_artifact_path / "docker"
         self.rhel_iso_path = self.downloaded_artifact_path / "rhel"
@@ -46,11 +46,12 @@ class artifact_downloader():
         else:
             print(" === Docker images successfully validated ===")
 
-    def download_unpacker(self):
+    def download_scripts(self):
         os.chdir(self.downloaded_artifact_path)
-        print("\n ------ Downloading Unpacker Script ------")
+        print("\n ------ Downloading Scripts ------")
         self.download_files("unpacker")
-        print(" === Unpacker script successfully downloaded ===")
+        self.download_files("load-docker-images")
+        print(" === Scripts successfully downloaded ===")
 
     # downloads docker and docker-compose binaries
     def download_docker_binaries(self):
@@ -174,7 +175,7 @@ def validate_release_format(tag: str) -> bool:
         return False
     return True
 
-def run_downloader():
+def cli_get_args():
     parser = argparse.ArgumentParser(description='Download OPAL artifacts')
     parser.add_argument('bucket_name', help='Name of S3 bucket in which OPAL artifacts reside')
     parser.add_argument('release_tag', help='OPAL release tag to be downloaded, in YYYY.MM.DD form')
@@ -184,16 +185,17 @@ def run_downloader():
         action='store_true', default=False)
 
     args = parser.parse_args()
+    return args
 
+def run_downloader():
+    args = cli_get_args()
     bucket = args.bucket_name
     tag = args.release_tag
     if validate_release_format(tag):
     
-        #users aren't given a choice for downloading the images. Be kinda silly if all they wanted
-        # was rhel8, wouldn't it?
         dl = artifact_downloader(bucket, tag)
         dl.download_images()
-        dl.download_unpacker()
+        dl.download_scripts()
         if not args.no_docker:
             dl.download_docker_binaries()
         if not args.no_rhel:

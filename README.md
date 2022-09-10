@@ -22,7 +22,7 @@ Obtain and verify all artifacts required to deploy OPAL
 
 Runtime arguments: 
 
-* must be obtained from OPAL developers prior to use:
+* must be obtained from OPAL developers prior to use
 * S3 bucket name in which OPAL artifacts reside, referred to as `<bucket name>`
 * Release tag of available OPAL artifacts version, in the form of a date _YYYY.MM.DD_, referred to as `<release_tag>`
 
@@ -43,11 +43,24 @@ Install Red Hat Linux:
 * Copy all artifacts from the `opal_artifacts` directory (previous section) to the destination network
 * Use the rhel-*-x86_64-dvd.iso found in the `rhel` directory
 * Install in a VM (preferred) or bare metal
+* Minimum installation options:
+  * "Software Selection":
+    * "Base Environment": Workstation
+    * "Additional software for Selected Environment":
+      * Windows File Server
+      * Guest Agents
+      * Network File System Client
+      * Development Tools
+      * Headless Management
+  * "Root Password":
+    * Set a root password
+  * "Add User":
+    * Create an administrator user account
 
 Acquire and validate artifacts:
 
 * Copy all artifacts into a directory on the RHEL file system
-* All remaining commands shall be executed within RHEL
+* **All remaining commands shall be executed within RHEL**
 * Ensure that all artifacts exist inside a single directory
 * Navigate to the artifact directory
 * Execute the unpack and validation script: `/bin/bash ./unpack.sh`
@@ -55,8 +68,9 @@ Acquire and validate artifacts:
 
 Install docker:
 
-* Docker must be installed to deploy OPAL
+* Docker must be installed in RHEL to deploy OPAL
 * If docker is already installed, proceed to the next section
+* **(Following commands to be executed within RHEL)**
 * Navigate to `docker` directory inside the directory in which all artifacts reside
 * Switch to root user, one of: `sudo su -`, `su - root`, or `su -`
 * Execute the docker installation script: `/bin/bash ./install-docker.sh`
@@ -64,7 +78,9 @@ Install docker:
 
 Load docker images:
 
+* **(Following commands to be executed within RHEL)**
 * Remain root user if the "Install docker" step was followed, otherwise use one of the following to switch to root user: `sudo su -`, `su - root`, or `su -`
 * Execute the load images script: `/bin/bash ./load-docker-images.sh`
+* Note: currently requires the exact version of docker which is installed in the previous step
 
 Instantiate OPAL:

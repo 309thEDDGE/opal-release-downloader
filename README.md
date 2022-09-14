@@ -1,6 +1,6 @@
 # opal-release-downloader
 
-Download and verify all artifacts required to deploy OPAL. This README also includes the steps that must be followed to complete an OPAL deployment. Broadly:
+Download and verify all artifacts required to deploy OPAL. This README also includes the steps that must be followed to complete an OPAL deployment, broadly:
 
 * [Download and verify artifacts](#download-and-validate-artifacts)
 * [Prepare a Red Hat Enterprise Linux (RHEL) target with included ISO](#install-red-hat-linux)
@@ -15,7 +15,7 @@ Download and verify all artifacts required to deploy OPAL. This README also incl
 * Python3.9+ 
 * pip
 
-Installation and usage is OS-agnostic. We recommend that this package be installed and the script executed within a [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) environment. 
+Installation and usage is OS-agnostic. We recommend that this package be installed and executed within a [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) environment. 
 
 If you are using Windows and python was installed using the [python installer](https://www.python.org/downloads/windows/), the option to add python to the path automatically at install time must have been used. If that option was not used and python was manually added to the path this script will likely not function as expected. Re-run the installer, choose the modify option, check the box to add python to the user path and complete the installation modification prior to the following steps. 
 

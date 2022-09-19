@@ -39,6 +39,8 @@ From within the python environment described in the [Environment](#environment) 
 * (if applicable) Ensure that the active environment is the one in which opal-release-downloader was installed
 * View the help menu of the download script: `download_opal_artifacts -h`
 * Execute the download script and pass arguments as described in the help menu: `download_opal_artifacts <bucket_name> ...`
+* `<bucket_name>` can be omitted to automatically grab the latest tag
+* See `list_opal_artifacts -h` to view available tags
 * Do not use the flags `--no-docker` or `--no-rhel` unless you are an expert
 * Some of the compressed images are several GBs in size. The download and verification process can take over an hour depending on internet connection and computer performance.
 * If the command runs without error, the `opal_artifacts` directory contains all of the artifacts required to deploy OPAL
@@ -89,6 +91,15 @@ From within the python environment described in the [Environment](#environment) 
 * Execute the load images script: `/bin/bash ./load-docker-images.sh`
 * Note: currently requires the exact version of docker which is installed in the previous step
 
+### Configure Deployment
+
+* Execute configuration script: `/bin/bash ./images/opal-ops/docker-compose/configuration/new_deployment.bash`
+* Assign a label (`<deployment_label>`) to the deployment configuration, via on-screen prompts
+* Localhost deployment option is for testing on a stand-alone machine and not intended for production
+* On completion, a new script will be created that calls `docker-compose` with the correct configuration file: `start_<deployment_label>.sh`
+
 ### Instantiate OPAL
 
-* (docker-compose steps)
+* Must cd to docker-compose because .env.secrets is there (local deployment) 
+* Change directory to configured start script (script looks for `.env.secrets` in cwd): `cd ./images/opal-ops/docker-compose`
+* Execute the configured start script: `/bin/bash ./start_<deployment_label>.sh`

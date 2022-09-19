@@ -89,7 +89,7 @@ From within the python environment described in the [Environment](#environment) 
 
 * Remain root user if the "Install docker" step was followed, otherwise use one of the following to switch to root user: `sudo su -`, `su - root`, or `su -`
 * Execute the load images script: `/bin/bash ./load-docker-images.sh`
-* Note: currently requires the exact version of docker which is installed in the previous step
+* Requires docker version >= 19.03
 
 ### Configure Deployment
 

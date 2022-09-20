@@ -4,9 +4,9 @@ Download and verify all artifacts required to deploy OPAL. This README also incl
 
 * [Download and verify artifacts](#download-and-validate-artifacts)
 * [Prepare a Red Hat Enterprise Linux (RHEL) target with included ISO](#install-red-hat-linux)
-* [Acquire, extract, and verify artifacts within RHEL instance](#acquire-and-validate-artifacts)
+* [Acquire](#acquire-artifacts), [extract, and verify](#validate-artifacts) artifacts within RHEL instance
 * [Install docker](#install-docker) and [load OPAL docker images](#load-docker-images)
-* [Execute docker-compose script to instantiate OPAL](#instantiate-opal)
+* [Configure](#configure-deployment) and [instantiate OPAL](#instantiate-opal)
 
 ## Environment 
 
@@ -47,8 +47,6 @@ From within the python environment described in the [Environment](#environment) 
 
 ## OPAL Deployment
 
-**After installing RHEL and copying artifacts onto RHEL file system, all remaining sections describe commands or actions to be executed within RHEL.**
-
 ### Install Red Hat Linux
 
 * Copy all artifacts from the `opal_artifacts` directory (previous section) to the destination network
@@ -56,7 +54,7 @@ From within the python environment described in the [Environment](#environment) 
 * Install in a VM (preferred) or bare metal
 * Minimum installation options:
   * "Software Selection":
-    * "Base Environment": Workstation
+    * "Base Environment": Server with GUI
     * "Additional software for Selected Environment":
       * Windows File Server
       * Guest Agents
@@ -68,38 +66,59 @@ From within the python environment described in the [Environment](#environment) 
   * "Add User":
     * Create an administrator user account
 
-### Acquire and Validate Artifacts
+### Acquire Artifacts
 
 * Copy all artifacts into a directory on the RHEL file system
 * Ensure that all artifacts exist inside a single directory
+
+**Remaining sections describe commands or actions to be executed within RHEL.**
+
+### Validate Artifacts
+
 * Navigate to the artifact directory
 * Execute the unpack and validation script: `/bin/bash ./unpack.sh`
 * If there are no error messages and the script executes to completion, the artifacts are ready to be used to deploy OPAL
 
+### Execute Commands as Root User
+
+* Switch to root user: `sudo su -`
+* **All remaining steps shall be executed as root user**
+
 ### Install Docker
 
-* Docker must be installed in RHEL to deploy OPAL
-* If docker is already installed, proceed to the next section
-* Navigate to `docker` directory inside the directory in which all artifacts reside
-* Switch to root user, one of: `sudo su -`, `su - root`, or `su -`
+* Navigate to `docker` directory inside the directory in which all artifacts reside: `cd docker`
 * Execute the docker installation script: `/bin/bash ./install-docker.sh`
 * Change to the higher-level directory: `cd ..`
 
 ### Load Docker Images
 
-* Remain root user if the "Install docker" step was followed, otherwise use one of the following to switch to root user: `sudo su -`, `su - root`, or `su -`
 * Execute the load images script: `/bin/bash ./load-docker-images.sh`
-* Requires docker version >= 19.03
 
 ### Configure Deployment
 
 * Execute configuration script: `/bin/bash ./images/opal-ops/docker-compose/configuration/new_deployment.bash`
 * Assign a label (`<deployment_label>`) to the deployment configuration, via on-screen prompts
-* Localhost deployment option is for testing on a stand-alone machine and not intended for production
+* Localhost deployment option is for testing on a stand-alone machine and not intended for production -- _in beta_
+* For future reference, note the value chosen for `<dns_base>`, the base name for the DNS which will be appended to the service name
 * On completion, a new script will be created that calls `docker-compose` with the correct configuration file: `start_<deployment_label>.sh`
 
 ### Instantiate OPAL
 
-* Must cd to docker-compose because .env.secrets is there (local deployment) 
-* Change directory to configured start script (script looks for `.env.secrets` in cwd): `cd ./images/opal-ops/docker-compose`
+* Change directory to the location of the configured start script (script looks for `.env.secrets` in cwd): `cd ./images/opal-ops/docker-compose`
 * Execute the configured start script: `/bin/bash ./start_<deployment_label>.sh`
+
+## Verify Deployment
+
+Follow the instructions in this section to verify that OPAL is running. These steps are only valid if all the steps in the [deployment](#opal-deployment) were completed successfully.
+
+Depending on [configuration](#configure-deployment) URLs for various services will be in the form: `https://<service_name>[.opal]<dns_base>`. 
+
+### Keycloak
+
+* wip: execute keycloak health check script
+
+### JupyterHub
+
+* From within the VM, open the browser and navigate to the URL with `<service_name> = jupyterlab
+* wip: execute all tests
+* Is this sufficient to consider that catalog-fe/be, minio, are functioning?

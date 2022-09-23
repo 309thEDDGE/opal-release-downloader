@@ -11,9 +11,10 @@ Download and verify all artifacts required to deploy OPAL. This README also incl
 ## Environment 
 
 * Open internet connection
-* docker 20.x.x
-* Python3.9+ 
-* pip
+* Python3.9+ with
+  * pip
+  * setuptools >= 43
+* git
 
 Installation and usage is OS-agnostic. We recommend that this package be installed and executed within a [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) environment. 
 

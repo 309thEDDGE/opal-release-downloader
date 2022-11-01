@@ -1,5 +1,4 @@
-import pytest 
-from unittest.mock import patch, Mock, call
+from unittest.mock import patch
 
 import opal_release_downloader._date as _date 
 

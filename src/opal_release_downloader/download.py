@@ -9,7 +9,7 @@ from .fetch import get_files
 from .verify import verify_directory
 from ._display import display, error, warn
 
-def bright(s, color=colorama.Fore.WHITE):
+def bright(s: str, color: str=colorama.Fore.WHITE):
     s = ( colorama.Style.BRIGHT + color + s
             + colorama.Style.RESET_ALL + '\n' )
     sys.stdout.write(s)
@@ -76,7 +76,7 @@ def bootstrap(bucket_name, *, release_tag=None,
     finally:
         os.chdir(cur_dir)
 
-    bright('SUCCESS', colorama.Fore.GREEN)
+    # bright('SUCCESS', colorama.Fore.GREEN)
 
 
 def main():

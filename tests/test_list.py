@@ -5,9 +5,7 @@ from opal_release_downloader.list import *
 
 import opal_release_downloader._date as _date
 import sys
-import boto3
 import botocore
-import json
 
 @pytest.fixture
 def list_bucket_objects_config():

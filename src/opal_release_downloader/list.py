@@ -15,12 +15,14 @@ def list_bucket_objects(bucket_name: str, *, prefix: str='',
     s3 = boto3.client('s3', region_name=region_name,
             config=bc.config.Config(signature_version=bc.UNSIGNED))
     obj_list = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-    return obj_list
+    if obj_list['KeyCount'] == 0:
+        raise RuntimeError('No objects found')
+    return obj_list['Contents']
 
 def get_list(bucket_name, *, region_name=DEFAULT_REGION):
     obj_list = list_bucket_objects(bucket_name, region_name=region_name)
     s = set()
-    for o in obj_list['Contents']:
+    for o in obj_list:
         try:
             key = o['Key'].split('/')[0]
             s.add(date(key))
@@ -34,13 +36,9 @@ def print_list(bucket_name, *, region_name=DEFAULT_REGION):
         print(dt)
 
 def get_all(bucket_name, *, prefix='', region_name=DEFAULT_REGION):
-    s3 = boto3.client('s3', region_name=region_name,
-            config=bc.config.Config(signature_version=bc.UNSIGNED))
-    obj_list = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-    if obj_list['KeyCount'] == 0:
-        raise RuntimeError('No objects found')
-    return obj_list['Contents']
-
+    obj_list = list_bucket_objects(bucket_name, prefix=prefix,
+       region_name=region_name)
+    return obj_list
 
 def print_all(bucket_name, *, prefix='', region_name=DEFAULT_REGION):
     obj_list = get_all(bucket_name, prefix=prefix, region_name=region_name)

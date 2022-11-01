@@ -10,12 +10,17 @@ from ._constants import DEFAULT_REGION
 from ._date import date, date_fmt, date_tag
 from ._display import display, error
 
-def get_list(bucket_name, *, region_name=DEFAULT_REGION):
+def list_bucket_objects(bucket_name: str, *, prefix: str='', 
+    region_name: str=DEFAULT_REGION) -> dict:
     s3 = boto3.client('s3', region_name=region_name,
             config=bc.config.Config(signature_version=bc.UNSIGNED))
-    obj_list = s3.list_objects_v2(Bucket=bucket_name, Prefix="")['Contents']
+    obj_list = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    return obj_list
+
+def get_list(bucket_name, *, region_name=DEFAULT_REGION):
+    obj_list = list_bucket_objects(bucket_name, region_name=region_name)
     s = set()
-    for o in obj_list:
+    for o in obj_list['Contents']:
         try:
             key = o['Key'].split('/')[0]
             s.add(date(key))

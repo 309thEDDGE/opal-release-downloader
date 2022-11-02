@@ -134,7 +134,8 @@ class TestDownload():
 
         mock_bright.assert_has_calls(
             [call('Downloading and Verifying OPAL artifacts'),
-            call('Downloading and Verifying installation scripts')])
+            call('Downloading and Verifying installation scripts'),
+            call('SUCCESS', colorama.Fore.GREEN)])
 
         mock_get_images.assert_called_once_with(bucket_name, release_tag)
         mock_print.assert_has_calls(
@@ -173,7 +174,8 @@ class TestDownload():
 
         mock_bright.assert_has_calls(
             [call('Downloading and Verifying OPAL artifacts'),
-            call('Downloading and Verifying installation scripts')])
+            call('Downloading and Verifying installation scripts'),
+            call('SUCCESS', colorama.Fore.GREEN)])
 
         mock_get_images.assert_called_once_with(bucket_name, release_tag)
         mock_print.assert_has_calls(
@@ -215,7 +217,8 @@ class TestDownload():
             [call('Downloading and Verifying OPAL artifacts'),
             call('Downloading and Verifying installation scripts'),
             call('Downloading and Verifying docker'),
-            call('Downloading and Verifying RHEL-8')])
+            call('Downloading and Verifying RHEL-8'),
+            call('SUCCESS', colorama.Fore.GREEN)])
 
         mock_get_images.assert_called_once_with(bucket_name, release_tag)
         mock_print.assert_has_calls(

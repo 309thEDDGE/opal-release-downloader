@@ -76,7 +76,7 @@ def bootstrap(bucket_name, *, release_tag=None,
     finally:
         os.chdir(cur_dir)
 
-    # bright('SUCCESS', colorama.Fore.GREEN)
+    bright('SUCCESS', colorama.Fore.GREEN)
 
 
 def main():

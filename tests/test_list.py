@@ -24,7 +24,7 @@ class TestList():
 
     @patch('botocore.config')
     @patch('boto3.client')
-    def test_list_bucket_objects(self, mock_boto3, mock_botocore, 
+    def test_list_bucket_objects_get_s3_client(self, mock_boto3, mock_botocore, 
         list_bucket_objects_config):
         (bucket_name, config_retval, region_name, prefix, 
             list_objects_dict) = list_bucket_objects_config
@@ -36,7 +36,7 @@ class TestList():
 
         mock_boto3.return_value = mock_s3_client
 
-        test_obj_dict = list_bucket_objects(bucket_name, prefix=prefix, 
+        test_obj_dict, s3 = list_bucket_objects_get_s3_client(bucket_name, prefix=prefix, 
             region_name=region_name)
 
         mock_botocore.Config.assert_called_with(
@@ -52,11 +52,12 @@ class TestList():
             config=config_retval)
 
         assert test_obj_dict == list_objects_dict['Contents']
+        assert mock_s3_client == s3
 
 
     @patch('botocore.config')
     @patch('boto3.client')
-    def test_list_bucket_objects_no_objects_found(self, mock_boto3, 
+    def test_list_bucket_objects_get_s3_client_no_objects_found(self, mock_boto3, 
         mock_botocore, list_bucket_objects_config):
 
         (bucket_name, config_retval, region_name, prefix, 
@@ -73,7 +74,7 @@ class TestList():
         mock_boto3.return_value = mock_s3_client
 
         with pytest.raises(RuntimeError):
-            test_obj_dict = list_bucket_objects(bucket_name, prefix=prefix, 
+            list_bucket_objects_get_s3_client(bucket_name, prefix=prefix, 
                 region_name=region_name)
 
         mock_botocore.Config.assert_called_with(
@@ -88,6 +89,23 @@ class TestList():
         mock_boto3.assert_called_with('s3', region_name=region_name,
             config=config_retval)
 
+    @patch('opal_release_downloader.list.list_bucket_objects_get_s3_client')
+    def test_list_bucket_objects(self, mock_listgets3, 
+        list_bucket_objects_config):
+
+        (bucket_name, _, region_name, prefix, 
+            list_objects_dict) = list_bucket_objects_config
+
+        mock_s3_client = Mock()
+        mock_listgets3.return_value = list_objects_dict['Contents'], mock_s3_client
+        
+        test_obj_dict = list_bucket_objects(bucket_name, prefix=prefix,
+            region_name=region_name)
+        
+        mock_listgets3.assert_called_once_with(bucket_name, prefix=prefix, 
+            region_name=region_name)
+        
+        assert test_obj_dict == list_objects_dict['Contents']
 
     @patch('opal_release_downloader.list.list_bucket_objects')
     def test_get_list(self, mock_list_bucket_objects, 

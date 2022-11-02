@@ -8,7 +8,7 @@ import tqdm
 
 from ._constants import DEFAULT_REGION
 from ._display import display, error, warn
-from .list import get_latest
+from .list import get_latest, list_bucket_objects_get_s3_client
 
 def get_files(bucket_name, path_spec, *,
         region_name=DEFAULT_REGION,
@@ -26,38 +26,55 @@ def get_files(bucket_name, path_spec, *,
 
     dest = os.path.realpath(dest)
 
-    s3 = boto3.client('s3', region_name=region_name,
-            config=bc.config.Config(signature_version=bc.UNSIGNED))
-    items = s3.list_objects_v2(Bucket=bucket_name, Prefix=path_spec)
-    key_count = items['KeyCount']
-
-    if key_count == 0:
-        raise RuntimeError(f'unable to find files {bucket_name} {path_spec}')
+    item_list, s3 = list_bucket_objects_get_s3_client(bucket_name, 
+        prefix=path_spec, region_name=region_name)
 
     rel_dest = os.path.relpath(dest)
     print(f'Downloading files to {rel_dest}')
-    item_list = items['Contents']
     for it in item_list:
         key = it['Key']
         size = it['Size']
 
         it_path = os.path.join(key.split('/')[-1])
-        local_name = os.path.realpath(os.path.join(dest, it_path))
-        local_dir = os.path.dirname(local_name)
+        # local_name = os.path.realpath(os.path.join(dest, it_path))
+        # local_dir = os.path.dirname(local_name)
 
-        os.makedirs(local_dir, exist_ok=True)
-        if not os.path.isdir(local_dir):
-            raise RuntimeError(f'Unable to write to {local_dir}')
+        # os.makedirs(local_dir, exist_ok=True)
+        # if not os.path.isdir(local_dir):
+        #     raise RuntimeError(f'Unable to write to {local_dir}')
 
-        if os.path.exists(local_name):
-            os.unlink(local_name)
-            warn(f'WARNING: overwriting file {local_name}')
+        # if os.path.exists(local_name):
+        #     os.unlink(local_name)
+        #     warn(f'WARNING: overwriting file {local_name}')
 
-        with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=it_path) as tq:
-            def update(sz):
-                tq.update(sz)
+        # with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=it_path) as tq:
+        #     def update(sz):
+        #         tq.update(sz)
 
-            s3.download_file(bucket_name, key, local_name, Callback=update)
+        #     s3.download_file(bucket_name, key, local_name, Callback=update)
+    
+def prepare_local_path(dest: str, s3_item: dict):
+    key = s3_item['Key']
+    item_path = os.path.join(key.split('/')[-1])
+    local_name = os.path.realpath(os.path.join(dest, item_path))
+    local_dir = os.path.dirname(local_name)
+
+    os.makedirs(local_dir, exist_ok=True)
+    if not os.path.isdir(local_dir):
+        raise RuntimeError(f'Unable to write to {local_dir}')
+
+    if os.path.exists(local_name):
+        os.unlink(local_name)
+        warn(f'WARNING: overwriting file {local_name}')
+
+def s3_download_with_progress(s3_client, bucket_name: str, s3_key: str, 
+    local_name: str, size: int):
+    desc_path = os.path.basename(local_name)
+    with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=desc_path) as tq:
+        def update(sz):
+            tq.update(sz)
+
+        s3_client.download_file(bucket_name, s3_key, local_name, Callback=update)
 
 
 def main():

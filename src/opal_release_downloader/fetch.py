@@ -32,10 +32,10 @@ def get_files(bucket_name, path_spec, *,
     rel_dest = os.path.relpath(dest)
     print(f'Downloading files to {rel_dest}')
     for it in item_list:
-        key = it['Key']
-        size = it['Size']
+        # key = it['Key']
+        # size = it['Size']
 
-        it_path = os.path.join(key.split('/')[-1])
+        # it_path = os.path.join(key.split('/')[-1])
         # local_name = os.path.realpath(os.path.join(dest, it_path))
         # local_dir = os.path.dirname(local_name)
 
@@ -52,6 +52,10 @@ def get_files(bucket_name, path_spec, *,
         #         tq.update(sz)
 
         #     s3.download_file(bucket_name, key, local_name, Callback=update)
+
+        local_name = prepare_local_path(dest, it)
+        s3_download_with_progress(s3, bucket_name, it, local_name)
+
     
 def prepare_local_path(dest: str, s3_item: dict):
     key = s3_item['Key']
@@ -66,9 +70,12 @@ def prepare_local_path(dest: str, s3_item: dict):
     if os.path.exists(local_name):
         os.unlink(local_name)
         warn(f'WARNING: overwriting file {local_name}')
+    return local_name
 
-def s3_download_with_progress(s3_client, bucket_name: str, s3_key: str, 
-    local_name: str, size: int):
+def s3_download_with_progress(s3_client, bucket_name: str, s3_item: dict, 
+    local_name: str):
+    s3_key = s3_item['Key']
+    size = s3_item['Size']
     desc_path = os.path.basename(local_name)
     with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=desc_path) as tq:
         def update(sz):

@@ -7,21 +7,6 @@ import sys
 import builtins
 import colorama
 
-@pytest.fixture
-def mock_os_getcwd():
-    with patch('os.getcwd') as m:
-        yield m
-
-@pytest.fixture 
-def mock_os_makedirs():
-    with patch('os.makedirs') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_chdir():
-    with patch('os.chdir') as m:
-        yield m
-
 class TestDownload():
 
     @patch('sys.stdout')

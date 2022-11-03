@@ -7,66 +7,6 @@ import sys
 import builtins
 import colorama
 
-@pytest.fixture
-def mock_os_getcwd():
-    with patch('os.getcwd') as m:
-        yield m
-
-@pytest.fixture 
-def mock_os_makedirs():
-    with patch('os.makedirs') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_chdir():
-    with patch('os.chdir') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_path_dirname():
-    with patch('os.path.dirname') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_path_realpath():
-    with patch('os.path.realpath') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_path_relpath():
-    with patch('os.path.relpath') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_path():
-    with patch('os.path') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_unlink():
-    with patch('os.unlink') as m:
-        yield m
-
-@pytest.fixture
-def mock_os_makedirs():
-    with patch('os.makedirs') as m:
-        yield m
-
-
-@pytest.fixture
-def list_bucket_objects_config():
-    bucket_name = 'my bucket'
-    config_retval = 'config'
-    region_name = 'here and there'
-    prefix = 'a preefix'
-    list_objects_dict = {'KeyCount': 3, 'Contents': [
-        {'Key': '2022.10.01/file1.txt'},
-        {'Key': '2022.10.01/my.yaml'},
-        {'Key': '2022.04.05/other.data'}]}
-    return [bucket_name, config_retval, region_name, prefix, 
-        list_objects_dict]
-
-
 class TestFetch():
 
     def test_prepare_local_path(self, mock_os_path, mock_os_makedirs):

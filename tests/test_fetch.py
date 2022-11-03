@@ -43,7 +43,7 @@ def mock_os_path():
         yield m
 
 @pytest.fixture
-def mock_os_unlinke():
+def mock_os_unlink():
     with patch('os.unlink') as m:
         yield m
 
@@ -73,13 +73,11 @@ class TestFetch():
         s3_item = {'Key': '2022.09.07/blind', 'Size': 200}
         dest = '/home/user/artifacts'
         
-        key = s3_item['Key']
-
         join_retval1 = 'blind'
-        join_retval2 = os.path.join(dest, join_retval1)
+        join_retval2 = 'home/user/artifacts/blind'
         realpath_retval = join_retval2
-        dirname_retval = os.path.dirname(join_retval2)
-        mock_os_path.join.side_effects = [join_retval1, join_retval2]
+        dirname_retval = '/home/user/artifacts'
+        mock_os_path.join.side_effect = [join_retval1, join_retval2]
         mock_os_path.realpath.return_value = realpath_retval
         mock_os_path.dirname.return_value = dirname_retval
         mock_os_path.isdir.return_value = True
@@ -90,7 +88,54 @@ class TestFetch():
         mock_os_path.join.assert_has_calls([call(join_retval1), call(dest, join_retval1)])
         mock_os_path.realpath.assert_called_once_with(join_retval2)
         mock_os_path.dirname.assert_called_once_with(realpath_retval)
-        mock_os_makedirs.assert_called_once_with(realpath_retval, exist_ok=True)
+        mock_os_makedirs.assert_called_once_with(dirname_retval, exist_ok=True)
+        mock_os_path.exists.assert_called_once_with(realpath_retval)
+
+    def test_prepare_local_path_makedirs_failure(self, mock_os_path, mock_os_makedirs):
+        s3_item = {'Key': '2022.09.07/blind', 'Size': 200}
+        dest = '/home/user/artifacts'
+        
+        join_retval1 = 'blind'
+        join_retval2 = 'home/user/artifacts/blind'
+        realpath_retval = join_retval2
+        dirname_retval = '/home/user/artifacts'
+        mock_os_path.join.side_effect = [join_retval1, join_retval2]
+        mock_os_path.realpath.return_value = realpath_retval
+        mock_os_path.dirname.return_value = dirname_retval
+        mock_os_path.isdir.return_value = False
+
+        with pytest.raises(RuntimeError):
+            prepare_local_path(dest, s3_item)
+
+        mock_os_path.join.assert_has_calls([call(join_retval1), call(dest, join_retval1)])
+        mock_os_path.realpath.assert_called_once_with(join_retval2)
+        mock_os_path.dirname.assert_called_once_with(realpath_retval)
+        mock_os_makedirs.assert_called_once_with(dirname_retval, exist_ok=True)
+
+    def test_prepare_local_path_unlink(self, mock_os_path, mock_os_makedirs,
+        mock_os_unlink):
+        s3_item = {'Key': '2022.09.07/blind', 'Size': 200}
+        dest = '/home/user/artifacts'
+        
+        join_retval1 = 'blind'
+        join_retval2 = 'home/user/artifacts/blind'
+        realpath_retval = join_retval2
+        dirname_retval = '/home/user/artifacts'
+        mock_os_path.join.side_effect = [join_retval1, join_retval2]
+        mock_os_path.realpath.return_value = realpath_retval
+        mock_os_path.dirname.return_value = dirname_retval
+        mock_os_path.isdir.return_value = True
+        mock_os_path.exists.return_value = True
+
+        prepare_local_path(dest, s3_item)
+
+        mock_os_path.join.assert_has_calls([call(join_retval1), call(dest, join_retval1)])
+        mock_os_path.realpath.assert_called_once_with(join_retval2)
+        mock_os_path.dirname.assert_called_once_with(realpath_retval)
+        mock_os_makedirs.assert_called_once_with(dirname_retval, exist_ok=True)
+        mock_os_path.exists.assert_called_once_with(realpath_retval)
+        mock_os_unlink.assert_called_once_with(realpath_retval)
+
 
     # @patch('opal_release_downloader.fetch.list_bucket_objects_get_s3_client')
     # @patch('opal_release_downloader.fetch.get_latest')

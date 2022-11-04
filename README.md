@@ -1,3 +1,4 @@
+
 # opal-release-downloader
 
 Download and verify all artifacts required to deploy OPAL. This README also includes the steps that must be followed to complete an OPAL deployment, broadly:
@@ -51,7 +52,7 @@ From within the python environment described in the [Environment](#environment) 
 ### Install Red Hat Linux
 
 * Copy all artifacts from the `opal_artifacts` directory (previous section) to the destination network
-* Use the rhel-*-x86_64-dvd.iso found in the `rhel` directory
+* use the rhel-*-x86_64-dvd.iso found in the `rhel` directory
 * Install in a VM (preferred) or bare metal
 * Minimum installation options:
   * "Software Selection":
@@ -71,55 +72,52 @@ From within the python environment described in the [Environment](#environment) 
 
 * Copy all artifacts into a directory on the RHEL file system
 * Ensure that all artifacts exist inside a single directory
+* Expected directory structure:
+- docker/
+- images/
+- load-docker-images.sh
+- unpacker.sh
+- install-opal.sh
 
 **Remaining sections describe commands or actions to be executed within RHEL.**
 
-### Validate Artifacts
+### Install OPAL
 
 * Navigate to the artifact directory
-* Execute the unpack and validation script: `/bin/bash ./unpack.sh`
-* If there are no error messages and the script executes to completion, the artifacts are ready to be used to deploy OPAL
+* Execute the opal installer script: `sudo /bin/bash install-opal.sh`
+  * This will validate artifact checksums one final time, install docker, unzip/load the images, and begin configuration
+  * The configuration stage will ask several questions to tailor OPAL for your environment.
+  * For future reference, note the value chosen for `<dns_base>`, the base name for the DNS which will be appended to the service name
+* If there are no error messages and the script executes to completion, OPAL will be installed and ready to run without ssl.
+  * To enable ssl, you will need to provide your own certificates.
+  
+### Add Certificates
 
-### Execute Commands as Root User
+Certificates will either need to be generated with a wildcard following the format: `*[.opal]<dns_base>`.
 
-* Switch to root user: `sudo su -`
-* **All remaining steps shall be executed as root user**
-
-### Install Docker
-
-* Navigate to `docker` directory inside the directory in which all artifacts reside: `cd docker`
-* Execute the docker installation script: `/bin/bash ./install-docker.sh`
-* Change to the higher-level directory: `cd ..`
-
-### Load Docker Images
-
-* Execute the load images script: `/bin/bash ./load-docker-images.sh`
-
-### Configure Deployment
-
-* Execute configuration script: `/bin/bash ./images/opal-ops/docker-compose/configuration/new_deployment.bash`
-* Assign a label (`<deployment_label>`) to the deployment configuration, via on-screen prompts
-* Localhost deployment option is for testing on a stand-alone machine and not intended for production -- _in beta_
-* For future reference, note the value chosen for `<dns_base>`, the base name for the DNS which will be appended to the service name
-* On completion, a new script will be created that calls `docker-compose` with the correct configuration file: `start_<deployment_label>.sh`
+* Name the public and private certificates `tls.crt` and `tls.key`, respectively
+* Place the certificates in `opal-ops/docker-compose/keycloak/certs/<deployment_label>`
+* Additionally, copy the certificates to `opal-ops/docker-compose/jupyterhub/certs/selfsigned/` as `jhubssl.crt` and `jhubssl.key`
 
 ### Instantiate OPAL
 
-* Change directory to the location of the configured start script (script looks for `.env.secrets` in cwd): `cd ./images/opal-ops/docker-compose`
-* Execute the configured start script: `/bin/bash ./start_<deployment_label>.sh`
+* Change directory to the location of the configured start script (script looks for `.env.secrets` in cwd): `cd ./opal-ops/docker-compose`
+* Run the OPAL utility with the `start` option: `/bin/bash ./<deployment_label>_util.sh start`. This step builds several images, and may take a while on first run
 
 ## Verify Deployment
 
 Follow the instructions in this section to verify that OPAL is running. These steps are only valid if all the steps in the [deployment](#opal-deployment) were completed successfully.
 
-Depending on [configuration](#configure-deployment) URLs for various services will be in the form: `https://<service_name>[.opal]<dns_base>`. 
-
+Depending on [configuration](#configure-deployment) URLs for various services will be in the form: `https://<service_name>[.opal]<dns_base>`
 ### Keycloak
 
 * wip: execute keycloak health check script
 
 ### JupyterHub
 
-* From within the VM, open the browser and navigate to the URL with `<service_name> = jupyterlab
-* wip: execute all tests
-* Is this sufficient to consider that catalog-fe/be, minio, are functioning?
+* From within the VM, open the browser and navigate to `opal.<dns_base>`
+
+### OPAL Catalog
+
+* From the jupterlab interface, open a new terminal tab and run `/bin/bash /home/jovyan/opal/devops-software/test_all.bash`. If all tests pass, the catalog is working as intended.
+* From the jupyterlab interface, click file -> Hub control panel. From the home page, click services -> Opal Catalog. This should redirect you to the catalog webpage. Click "Sign in with Jupyterhub", and the catalog should populate

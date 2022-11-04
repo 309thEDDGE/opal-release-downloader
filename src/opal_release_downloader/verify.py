@@ -20,28 +20,17 @@ def md5sum(filename):
         with open(filename, 'rb') as f:
             block = f.read(4096)
             bytes_read = len(block)
-            print(block)
-            index = 0
             while block:
-                print(f"len block: {len(block)}")
                 hash_.update(block)
                 tq.update(bytes_read)
 
                 block = f.read(4096)
                 bytes_read = len(block)
-                index += 1
-                if index > 4:
-                    break
 
     return hash_.hexdigest()
 
 
-def check_checksums(checksum, *, excluded_files=[], strict=True):
-    """
-    notes:
-    This should run from within the directory where the checksum file and
-    rest of the files are
-    """
+def read_checksums_from_file(checksum: str) -> dict:
     sums = {}
     with open(checksum, "r") as f:
         line = f.readline()
@@ -56,8 +45,20 @@ def check_checksums(checksum, *, excluded_files=[], strict=True):
             sums[filename] = hash_
 
             line = f.readline()
+    return sums
 
+
+def check_checksums(checksum, *, excluded_files=[], strict=True):
+    """
+    notes:
+    This should run from within the directory where the checksum file and
+    rest of the files are
+    """
+    sums = read_checksums_from_file(checksum)
     print('verifying checksums')
+
+    # TODO: 
+    # Break out following loop, or most of it, into another func
     for root, dirs, files, in os.walk('.'):
         if dirs:
             cur_dir = os.path.join(os.getcwd(), root)

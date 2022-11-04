@@ -20,13 +20,18 @@ def md5sum(filename):
         with open(filename, 'rb') as f:
             block = f.read(4096)
             bytes_read = len(block)
-
+            print(block)
+            index = 0
             while block:
+                print(f"len block: {len(block)}")
                 hash_.update(block)
                 tq.update(bytes_read)
 
                 block = f.read(4096)
                 bytes_read = len(block)
+                index += 1
+                if index > 4:
+                    break
 
     return hash_.hexdigest()
 

@@ -73,11 +73,11 @@ From within the python environment described in the [Environment](#environment) 
 * Copy all artifacts into a directory on the RHEL file system
 * Ensure that all artifacts exist inside a single directory
 * Expected directory structure:
-- docker/
-- images/
-- load-docker-images.sh
-- unpacker.sh
-- install-opal.sh
+  - docker/
+  - images/
+  - load-docker-images.sh
+  - unpacker.sh
+  - install-opal.sh
 
 **Remaining sections describe commands or actions to be executed within RHEL.**
 

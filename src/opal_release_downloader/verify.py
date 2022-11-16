@@ -174,25 +174,12 @@ def verify_directory(
 
     try:
         os.chdir(directory)
-
-        if search and (checksum is None):
-            files = glob.glob('md5sums_*')
-            if len(files) != 1:
-                raise Exception('Unable to find checksum file')
-            checksum = files[0]
-
-        if (not checksum) or (not os.path.exists(checksum)):
-            raise Exception(f'checksum file {checksum} does not exist')
+        checksum = find_file_and_confirm('md5sums_*', file_name=checksum,
+            search=search)
 
         if require_manifest:
-            if search and (manifest is None):
-                files = glob.glob("file_manifest_*.yml")
-                if len(files) != 1:
-                    raise Exception('Unable to find manifest file')
-                manifest = files[0]
-
-            if (not manifest) or (not os.path.exists(manifest)):
-                raise Exception(f'manifest file {manifest} does not exist')
+            manifest = find_file_and_confirm('file_manifest_*.yml', 
+                file_name=manifest, search=search)
 
             check_manifest(manifest, excluded_files=[checksum])
             print()

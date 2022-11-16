@@ -25,3 +25,8 @@ def mock_os_unlink():
 def mock_os_makedirs():
     with patch('os.makedirs') as m:
         yield m
+
+@pytest.fixture
+def mock_os_walk():
+    with patch('os.walk') as m:
+        yield m

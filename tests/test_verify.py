@@ -92,3 +92,151 @@ class TestVerify():
 
         mock_open.assert_called_once_with(checksum, "r")
         mock_os_path.basename.assert_called_once_with('/home/user/f1')
+
+    def test_operate_on_files_fail_if_subdirs(self, mock_os_walk,
+        mock_os_getcwd, mock_os_path):
+        walk_root = '.'
+        walk_dirs = ['data', 'test']
+        walk_files = ['f1', 'other.txt']
+        root_dir = '.'
+        join_retval = '/home/Sprocket/./data'
+        getcwd_retval = '/home/Sprocket'
+
+        mock_os_walk.return_value = [[walk_root, walk_dirs, walk_files]]
+        mock_os_path.join.return_value = join_retval
+        mock_os_getcwd.return_value = getcwd_retval
+        def dummy_func(f):
+            pass
+
+        with pytest.raises(Exception) as e:
+            operate_on_files(root_dir, dummy_func, 
+                fail_if_subdirs=True)
+
+        mock_os_walk.assert_called_once_with(root_dir)
+        mock_os_getcwd.assert_called_once()
+        mock_os_path.join.assert_called_once_with(getcwd_retval, walk_root)
+
+    def test_operate_on_files_apply_func(self, mock_os_walk):
+        walk_root = '.'
+        walk_dirs = ['data', 'test']
+        walk_files = ['f1', 'other.txt']
+        root_dir = '.'
+
+        mock_os_walk.return_value = [[walk_root, walk_dirs, walk_files]]
+
+        files_operated = []
+        def dummy_func(f):
+            files_operated.append(f)
+
+        operate_on_files(root_dir, dummy_func, 
+                fail_if_subdirs=False)
+
+        mock_os_walk.assert_called_once_with(root_dir)
+        assert files_operated == walk_files
+
+    def test_operate_on_files_excluded_files(self, mock_os_walk):
+        walk_root = '.'
+        walk_dirs = ['data', 'test']
+        walk_files = ['f1', 'other.txt']
+        root_dir = '.'
+        excluded_files = ['other.txt']
+
+        mock_os_walk.return_value = [[walk_root, walk_dirs, walk_files]]
+
+        files_operated = []
+        def dummy_func(f):
+            files_operated.append(f)
+
+        operate_on_files(root_dir, dummy_func, 
+                fail_if_subdirs=False, excluded_files=excluded_files)
+
+        mock_os_walk.assert_called_once_with(root_dir)
+        assert files_operated == ['f1']
+
+    def test_operate_on_files_expected_files(self, mock_os_walk):
+        walk_root = '.'
+        walk_dirs = ['data', 'test']
+        walk_files = ['f1', 'other.txt']
+        root_dir = '.'
+        expected_files = ['other.txt']
+        mock_os_walk.return_value = [[walk_root, walk_dirs, walk_files]]
+
+        files_operated = []
+        def dummy_func(f):
+            files_operated.append(f)
+
+        with pytest.raises(Exception) as e:
+            operate_on_files(root_dir, dummy_func, 
+                fail_if_subdirs=False, expected_files=expected_files)
+
+        mock_os_walk.assert_called_once_with(root_dir)
+        assert files_operated == []
+    
+    @patch('opal_release_downloader.verify.warn')
+    def test_check_checksums_operator_not_in_sums(self, mock_warn):
+        f = 'f1'
+        sums = {'other': 'akb98434ptiuheg'}
+        strict = False
+
+        op_func = check_checksums_operator(sums, strict)
+        op_func(f)
+
+        mock_warn.assert_called_once()
+
+    def test_check_checksums_operator_not_in_sums_strict(self):
+        f = 'f1'
+        sums = {'other': 'akb98434ptiuheg'}
+        strict = True
+
+        op_func = check_checksums_operator(sums, strict)
+        with pytest.raises(Exception) as e:
+            op_func(f)
+
+    @patch('opal_release_downloader.verify.md5sum')
+    def test_check_checksums_operator_matching_sum(self, mock_md5sum):
+        f = 'other'
+        sums = {'other': 'akb98434ptiuheg'}
+        strict = True
+
+        mock_md5sum.return_value = sums['other']
+        op_func = check_checksums_operator(sums, strict)
+        op_func(f)
+
+        mock_md5sum.assert_called_once_with(f)
+
+    @patch('opal_release_downloader.verify.md5sum')
+    def test_check_checksums_operator_nonmatching_sum(self, mock_md5sum):
+        f = 'other'
+        sums = {'other': 'akb98434ptiuheg'}
+        strict = True
+
+        mock_md5sum.return_value = 'nonmatching'
+        op_func = check_checksums_operator(sums, strict)
+        with pytest.raises(Exception) as e:
+            op_func(f)
+
+        mock_md5sum.assert_called_once_with(f)
+
+    
+    @patch('opal_release_downloader.verify.operate_on_files')
+    @patch('opal_release_downloader.verify.check_checksums_operator')
+    @patch('opal_release_downloader.verify.read_checksums_from_file')
+    def test_check_checksums(self, mock_read_checksums_from_file, 
+        mock_check_checksums_operator, mock_operate_on_files):
+        checksum = 'checksums_file.txt'
+        sums = {'test', 'blahago8934t98'}
+        strict = False
+        excluded_files = ['another']
+        operator = Mock()
+        fail_if_subdirs = True
+
+        mock_read_checksums_from_file.return_value = sums
+        mock_check_checksums_operator.return_value = operator
+
+        check_checksums(checksum, excluded_files=excluded_files, 
+            strict=strict)
+
+        mock_read_checksums_from_file.assert_called_once_with(checksum)
+        mock_check_checksums_operator.assert_called_once_with(sums, strict)
+        mock_operate_on_files.assert_called_once_with('.', operator, 
+            fail_if_subdirs=fail_if_subdirs, excluded_files=excluded_files)

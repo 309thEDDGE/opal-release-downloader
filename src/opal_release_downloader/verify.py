@@ -4,6 +4,7 @@ import hashlib
 import os
 import sys
 import yaml
+import types
 
 import tqdm
 import colorama
@@ -47,6 +48,21 @@ def read_checksums_from_file(checksum: str) -> dict:
             line = f.readline()
     return sums
 
+def check_checksums_operator(sums: dict, strict: bool) -> types.FunctionType:
+    def _check_checksums_operator(f: str):
+        if not f in sums:
+            if strict:
+                raise Exception(f'file "{f}" no checksum found.')
+            else:
+                warn(f'WARNING: no checksum found for "{f}"')
+                return
+
+        sum_ = md5sum(f)
+        if sum_ != sums[f]:
+            raise Exception(f'file "{f}" checksum {sum_}')
+
+    return _check_checksums_operator
+
 
 def check_checksums(checksum, *, excluded_files=[], strict=True):
     """
@@ -57,27 +73,27 @@ def check_checksums(checksum, *, excluded_files=[], strict=True):
     sums = read_checksums_from_file(checksum)
     print('verifying checksums')
 
-    # TODO: 
-    # Break out following loop, or most of it, into another func
-    for root, dirs, files, in os.walk('.'):
-        if dirs:
+    operator = check_checksums_operator(sums, strict)
+    operate_on_files('.', operator, fail_if_subdirs=True, 
+        excluded_files=excluded_files)
+
+def operate_on_files(root_dir: str, operator: types.FunctionType, 
+    fail_if_subdirs: bool=False, excluded_files: list=[],
+    expected_files=[]):
+    for root, dirs, files in os.walk(root_dir):
+        print(f"root: {root}, dirs: {dirs}, files: {files}")
+        if fail_if_subdirs and dirs:
             cur_dir = os.path.join(os.getcwd(), root)
             raise Exception(f'unexpected directory layout in {cur_dir}')
-
+        
         for f in files:
             if f in excluded_files:
-                continue
+                continue 
+            if expected_files:
+                if not f in expected_files:
+                    raise Exception(f'Unexepected file "{f}" found')
+            operator(f)
 
-            if not f in sums:
-                if strict:
-                    raise Exception(f'file "{f}" no checksum found.')
-                else:
-                    warn(f'WARNING: no checksum found for "{f}"')
-                    continue
-
-            sum_ = md5sum(f)
-            if sum_ != sums[f]:
-                raise Exception(f'file "{f}" checksum {sum_}')
 
 
 def check_manifest(manifest, *, excluded_files=[]):

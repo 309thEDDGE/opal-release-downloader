@@ -1,5 +1,6 @@
 import pytest
-from unittest.mock import patch, Mock, call
+import yaml
+from unittest.mock import patch, Mock, call, ANY
 
 from opal_release_downloader.verify import *
 
@@ -240,3 +241,47 @@ class TestVerify():
         mock_check_checksums_operator.assert_called_once_with(sums, strict)
         mock_operate_on_files.assert_called_once_with('.', operator, 
             fail_if_subdirs=fail_if_subdirs, excluded_files=excluded_files)
+
+    @patch('opal_release_downloader.verify.tqdm')
+    def test_check_manifest_operator(self, mock_tqdm):
+        f = 'a_file.data'
+        files_found = {}
+
+        op_func = check_manifest_operator(files_found, mock_tqdm.tqdm)
+        op_func(f)
+
+        assert files_found == {f: True}
+        mock_tqdm.tqdm.update.assert_called_once()
+
+    @patch('opal_release_downloader.verify.operate_on_files')
+    @patch('opal_release_downloader.verify.check_manifest_operator')
+    @patch('opal_release_downloader.verify.yaml')
+    @patch('builtins.open')
+    @patch('opal_release_downloader.verify.tqdm')
+    def test_check_manifest(self, mock_tqdm, mock_open, mock_yaml,
+        mock_check_manifest_operator, mock_operate_on_files):
+        manifest = 'manifest.txt'
+        excluded_files = ['one.a', 'two.b']
+        expected_files = {'exp1.a': None, 'exp2.b': None}
+        files_found = {k: False for k,v in expected_files.items()}
+        expected_files_list = list(expected_files.keys())
+        operator = Mock()
+
+        mock_f = Mock()
+        mock_open.return_value.__enter__.return_value = mock_f
+        mock_yaml.load.return_value = expected_files
+        mock_tq = Mock()
+        mock_tqdm.tqdm.return_value.__enter__.return_value = mock_tq
+        mock_check_manifest_operator.return_value = operator
+
+        check_manifest(manifest, excluded_files=excluded_files)
+        mock_open.assert_called_once_with(manifest, "r")
+        mock_yaml.load.assert_called_once_with(mock_f, 
+            Loader=mock_yaml.SafeLoader)
+        mock_tqdm.tqdm.assert_called_once_with(desc='checking_manifest',
+            total=len(expected_files))
+        mock_check_manifest_operator.assert_called_once_with_any(
+            files_found, mock_tq)
+        mock_operate_on_files.assert_called_once_with('.', operator, 
+            fail_if_subdirs=True, excluded_files=excluded_files, 
+            expected_files=expected_files_list)

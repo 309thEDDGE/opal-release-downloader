@@ -95,6 +95,13 @@ def operate_on_files(root_dir: str, operator: types.FunctionType,
             operator(f)
 
 
+def check_manifest_operator(files_found: dict, tq: tqdm.tqdm):
+    def _check_manifest_operator(f):
+        files_found[f] = True
+        tq.update()
+
+    return _check_manifest_operator
+
 
 def check_manifest(manifest, *, excluded_files=[]):
     """
@@ -109,25 +116,15 @@ def check_manifest(manifest, *, excluded_files=[]):
     with open(manifest, "r") as f:
         expected_files = yaml.load(f, Loader=yaml.SafeLoader)
 
-    with tqdm.tqdm(desc='checking_manfiest', total=len(expected_files)) as tq:
+    with tqdm.tqdm(desc='checking_manifest', total=len(expected_files)) as tq:
         files_found = {}
+
         for f in expected_files:
             files_found[f] = False
 
-        for root, dirs, files, in os.walk('.'):
-            if dirs:
-                cur_dir = os.path.join(os.getcwd(), root)
-                raise Exception(f'unexpected directory layout in {cur_dir}')
-
-            for f in files:
-                if f in excluded_files:
-                    continue
-
-                if not  f in expected_files:
-                    raise Exception(f'unexpected file "{f}" found')
-
-                files_found[f] = True
-                tq.update()
+        operator = check_manifest_operator(files_found, tq)
+        operate_on_files('.', operator, fail_if_subdirs=True, 
+            excluded_files=excluded_files, expected_files=list(expected_files.keys()))
 
         for k, v in files_found.items():
             if not v:

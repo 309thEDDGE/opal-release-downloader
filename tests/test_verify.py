@@ -272,7 +272,16 @@ class TestVerify():
         mock_yaml.load.return_value = expected_files
         mock_tq = Mock()
         mock_tqdm.tqdm.return_value.__enter__.return_value = mock_tq
-        mock_check_manifest_operator.return_value = operator
+
+        # The side effect here exists solely as a convenient 
+        # way to modify the input argument, files_found.
+        def operator_side_effect(input, tq):
+            assert input == files_found
+            assert tq == mock_tq
+            for k in input.keys():
+                input[k] = True
+            return operator
+        mock_check_manifest_operator.side_effect = operator_side_effect
 
         check_manifest(manifest, excluded_files=excluded_files)
         mock_open.assert_called_once_with(manifest, "r")
@@ -280,8 +289,108 @@ class TestVerify():
             Loader=mock_yaml.SafeLoader)
         mock_tqdm.tqdm.assert_called_once_with(desc='checking_manifest',
             total=len(expected_files))
-        mock_check_manifest_operator.assert_called_once_with_any(
-            files_found, mock_tq)
         mock_operate_on_files.assert_called_once_with('.', operator, 
             fail_if_subdirs=True, excluded_files=excluded_files, 
             expected_files=expected_files_list)
+
+    @patch('opal_release_downloader.verify.operate_on_files')
+    @patch('opal_release_downloader.verify.check_manifest_operator')
+    @patch('opal_release_downloader.verify.yaml')
+    @patch('builtins.open')
+    @patch('opal_release_downloader.verify.tqdm')
+    def test_check_manifest_file_not_found(self, mock_tqdm, mock_open, mock_yaml,
+        mock_check_manifest_operator, mock_operate_on_files):
+        manifest = 'manifest.txt'
+        excluded_files = ['one.a', 'two.b']
+        expected_files = {'exp1.a': None, 'exp2.b': None}
+        files_found = {k: False for k,v in expected_files.items()}
+        expected_files_list = list(expected_files.keys())
+        operator = Mock()
+
+        mock_f = Mock()
+        mock_open.return_value.__enter__.return_value = mock_f
+        mock_yaml.load.return_value = expected_files
+        mock_tq = Mock()
+        mock_tqdm.tqdm.return_value.__enter__.return_value = mock_tq
+
+        # The side effect here exists solely as a convenient 
+        # way to modify the input argument, files_found.
+        def operator_side_effect(input, tq):
+            assert input == files_found
+            assert tq == mock_tq
+            for k in input.keys():
+                input[k] = True
+                # note the break !!
+                break
+            return operator
+        mock_check_manifest_operator.side_effect = operator_side_effect
+
+        with pytest.raises(Exception) as e:
+            check_manifest(manifest, excluded_files=excluded_files)
+        mock_open.assert_called_once_with(manifest, "r")
+        mock_yaml.load.assert_called_once_with(mock_f, 
+            Loader=mock_yaml.SafeLoader)
+        mock_tqdm.tqdm.assert_called_once_with(desc='checking_manifest',
+            total=len(expected_files))
+        mock_operate_on_files.assert_called_once_with('.', operator, 
+            fail_if_subdirs=True, excluded_files=excluded_files, 
+            expected_files=expected_files_list)
+
+    def test_find_file_and_confirm_no_search_or_fname(self):
+        glob_str = 'a.*'
+        with pytest.raises(Exception) as e:
+            find_file_and_confirm(glob_str)
+
+    @patch('opal_release_downloader.verify.glob')
+    def test_find_file_and_confirm_glob_search_fail(self, 
+        mock_glob):
+        glob_str = 'a.*'
+        glob_search_result = ['a.txt', 'a.other']
+        mock_glob.glob.return_value = glob_search_result
+        with pytest.raises(Exception) as e:
+            find_file_and_confirm(glob_str, search=True)
+
+    @patch('opal_release_downloader.verify.glob')
+    def test_find_file_and_confirm_glob_search_succeed(self, 
+        mock_glob, mock_os_path):
+        glob_str = 'a.*'
+        glob_search_result = ['a.txt']
+        mock_glob.glob.return_value = glob_search_result
+        mock_os_path.exists.return_value = True
+        result = find_file_and_confirm(glob_str, search=True)
+        mock_os_path.exists.assert_called_once_with(glob_search_result[0])
+        assert result == glob_search_result[0]
+
+    @patch('opal_release_downloader.verify.glob')
+    def test_find_file_and_confirm_glob_result_not_exist(self, 
+        mock_glob, mock_os_path):
+        glob_str = 'a.*'
+        glob_search_result = ['a.txt']
+        mock_glob.glob.return_value = glob_search_result
+        mock_os_path.exists.return_value = False
+        with pytest.raises(Exception) as e:
+            find_file_and_confirm(glob_str, search=True)
+        mock_os_path.exists.assert_called_once_with(glob_search_result[0])
+
+    def test_find_file_and_confirm_no_search_file_not_exist(self, 
+        mock_os_path):
+        glob_str = 'a.*'
+        file_name = 'a.txt'
+        mock_os_path.exists.return_value = False
+        with pytest.raises(Exception) as e:
+            find_file_and_confirm(glob_str, file_name=file_name, 
+                search=False)
+        mock_os_path.exists.assert_called_once_with(file_name)
+
+    def test_find_file_and_confirm_no_search_file_exist(self, 
+        mock_os_path):
+        glob_str = 'a.*'
+        file_name = 'a.txt'
+        mock_os_path.exists.return_value = True
+        result = find_file_and_confirm(glob_str, file_name=file_name, 
+                search=False)
+        mock_os_path.exists.assert_called_once_with(file_name)
+        assert result == file_name
+
+    def test_verify_directory():
+        pass

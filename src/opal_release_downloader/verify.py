@@ -112,7 +112,6 @@ def check_manifest(manifest, *, excluded_files=[]):
     - a file is in the folder that shouldn't be there
     - a file is missing from the folder
     """
-
     with open(manifest, "r") as f:
         expected_files = yaml.load(f, Loader=yaml.SafeLoader)
 
@@ -126,11 +125,36 @@ def check_manifest(manifest, *, excluded_files=[]):
         operate_on_files('.', operator, fail_if_subdirs=True, 
             excluded_files=excluded_files, expected_files=list(expected_files.keys()))
 
+        print(f"files_found: {files_found}")
         for k, v in files_found.items():
             if not v:
                 raise Exception(f'file "{k}" not found')
 
 
+def find_file_and_confirm(glob_str: str, file_name: str=None, 
+    search: bool=False) -> bool:
+    '''
+    Find a specific file by name or the first file in a glob
+    search and confirm the file exists. 
+
+    Assumes cwd is the search path.
+    '''
+    found_file = ''
+    if (not search) and (file_name is None):
+            raise Exception(f'File name not provided and search disabled')
+    if search and (file_name is None):
+        files = glob.glob(glob_str)
+        if len(files) != 1:
+            raise Exception('Unable to find checksum file')
+        found_file = files[0]
+    else:
+        found_file = file_name
+
+    if (not found_file) or (not os.path.exists(found_file)):
+        raise Exception(f'file {file_name} does not exist')
+    return found_file
+
+   
 def verify_directory(
         directory, *,
         checksum=None,

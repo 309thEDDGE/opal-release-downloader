@@ -135,9 +135,9 @@ class TestFetch():
             prefix=get_latest_retval, region_name=region_name)
         mock_os_path.relpath.assert_called_once_with(realpath_retval)
         assert mock_prepare_local_path.mock_calls == [
-            call(realpath_retval, item_list[0]),
-            call(realpath_retval, item_list[1]), 
-            call(realpath_retval, item_list[2])
+            call(realpath_retval, item_list[0], no_overwrite=False),
+            call(realpath_retval, item_list[1], no_overwrite=False), 
+            call(realpath_retval, item_list[2], no_overwrite=False)
         ]
         assert mock_s3_download.mock_calls == [
             call(s3, bucket_name, item_list[0], prepare_local_path_retvals[0]),
@@ -176,12 +176,52 @@ class TestFetch():
             prefix=path_spec, region_name=region_name)
         mock_os_path.relpath.assert_called_once_with(dest)
         assert mock_prepare_local_path.mock_calls == [
-            call(dest, item_list[0]),
-            call(dest, item_list[1]), 
-            call(dest, item_list[2])
+            call(dest, item_list[0], no_overwrite=False),
+            call(dest, item_list[1], no_overwrite=False), 
+            call(dest, item_list[2], no_overwrite=False)
         ]
         assert mock_s3_download.mock_calls == [
             call(s3, bucket_name, item_list[0], prepare_local_path_retvals[0]),
             call(s3, bucket_name, item_list[1], prepare_local_path_retvals[1]),
             call(s3, bucket_name, item_list[2], prepare_local_path_retvals[2])
+        ]
+
+    @patch('opal_release_downloader.fetch.s3_download_with_progress')
+    @patch('opal_release_downloader.fetch.prepare_local_path')
+    @patch('opal_release_downloader.fetch.list_bucket_objects_get_s3_client')
+    def test_get_files_no_overwrite(self, mock_list_objects, 
+        mock_prepare_local_path, mock_s3_download, mock_os_path):
+        bucket_name = 'howdy-doody'
+        path_spec = '2022.09.12'
+        region_name = 'us-west-and-east'
+        dest = '/home/user/opal_download'
+
+        item_list = [{'Key': '2022.09.07/three', 'Size': 100}, 
+            {'Key': '2022.09.07/blind', 'Size': 200}, 
+            {'Key': '2022.09.07/mice', 'Size': 300}]
+        s3 = 's3 client'
+    
+        relpath_retval = '../opal_download'
+        mock_os_path.realpath.return_value = dest
+        mock_list_objects.return_value = item_list, s3
+        mock_os_path.relpath.return_value = relpath_retval
+        prepare_local_path_retvals = ['two', 'three', 'four']
+        mock_prepare_local_path.side_effect = prepare_local_path_retvals
+        mock_os_path.exists.side_effect = [False, False, True]
+
+        get_files(bucket_name, path_spec, region_name=region_name, 
+            dest=dest, no_overwrite=True)
+        
+        mock_os_path.realpath.assert_called_once_with(dest)
+        mock_list_objects.assert_called_once_with(bucket_name, 
+            prefix=path_spec, region_name=region_name)
+        mock_os_path.relpath.assert_called_once_with(dest)
+        assert mock_prepare_local_path.mock_calls == [
+            call(dest, item_list[0], no_overwrite=True),
+            call(dest, item_list[1], no_overwrite=True),
+            call(dest, item_list[2], no_overwrite=True)
+        ]
+        assert mock_s3_download.mock_calls == [
+            call(s3, bucket_name, item_list[0], prepare_local_path_retvals[0]),
+            call(s3, bucket_name, item_list[1], prepare_local_path_retvals[1]),
         ]

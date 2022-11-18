@@ -12,7 +12,7 @@ from .list import get_latest, list_bucket_objects_get_s3_client
 
 def get_files(bucket_name, path_spec, *,
         region_name=DEFAULT_REGION,
-        dest=None):
+        dest=None, no_overwrite=False):
 
     #TODO:  i think this shouldn't be so helpfull fetch.get_files(...)
     #       should always have a path_spec
@@ -32,32 +32,12 @@ def get_files(bucket_name, path_spec, *,
     rel_dest = os.path.relpath(dest)
     print(f'Downloading files to {rel_dest}')
     for it in item_list:
-        # key = it['Key']
-        # size = it['Size']
-
-        # it_path = os.path.join(key.split('/')[-1])
-        # local_name = os.path.realpath(os.path.join(dest, it_path))
-        # local_dir = os.path.dirname(local_name)
-
-        # os.makedirs(local_dir, exist_ok=True)
-        # if not os.path.isdir(local_dir):
-        #     raise RuntimeError(f'Unable to write to {local_dir}')
-
-        # if os.path.exists(local_name):
-        #     os.unlink(local_name)
-        #     warn(f'WARNING: overwriting file {local_name}')
-
-        # with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=it_path) as tq:
-        #     def update(sz):
-        #         tq.update(sz)
-
-        #     s3.download_file(bucket_name, key, local_name, Callback=update)
-
-        local_name = prepare_local_path(dest, it)
-        s3_download_with_progress(s3, bucket_name, it, local_name)
+        local_name = prepare_local_path(dest, it, no_overwrite=no_overwrite)
+        if not (no_overwrite and os.path.exists(local_name)):
+            s3_download_with_progress(s3, bucket_name, it, local_name)
 
     
-def prepare_local_path(dest: str, s3_item: dict):
+def prepare_local_path(dest: str, s3_item: dict, no_overwrite=False):
     key = s3_item['Key']
     item_path = os.path.join(key.split('/')[-1])
     local_name = os.path.realpath(os.path.join(dest, item_path))
@@ -67,7 +47,7 @@ def prepare_local_path(dest: str, s3_item: dict):
     if not os.path.isdir(local_dir):
         raise RuntimeError(f'Unable to write to {local_dir}')
 
-    if os.path.exists(local_name):
+    if os.path.exists(local_name) and not no_overwrite:
         os.unlink(local_name)
         warn(f'WARNING: overwriting file {local_name}')
     return local_name

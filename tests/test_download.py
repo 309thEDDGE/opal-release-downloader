@@ -29,11 +29,12 @@ class TestDownload():
         mock_print):
         bucket_name = 'my bucket'
         release_tag = '2022.10.31'
+        no_overwrite = True
 
-        get_images(bucket_name, release_tag)
+        get_images(bucket_name, release_tag, no_overwrite)
 
         mock_get_files.assert_called_with(bucket_name, release_tag,
-            dest='images')
+            dest='images', no_overwrite=no_overwrite)
         mock_get_files.assert_called_once()
         mock_print.assert_called_once()
         assert mock_print.mock_calls == [call()]
@@ -46,11 +47,12 @@ class TestDownload():
     def test_get_scripts(self, mock_get_files):
         bucket_name = 'my bucket'
         release_tag = '2022.10.31'
+        no_overwrite = True
 
-        get_scripts(bucket_name, release_tag)
+        get_scripts(bucket_name, release_tag, no_overwrite)
 
         mock_get_files.assert_called_with(bucket_name, 'unpacker',
-            dest='.')
+            dest='.', no_overwrite=no_overwrite)
         mock_get_files.assert_called_once()
 
     @patch('builtins.print')
@@ -59,10 +61,12 @@ class TestDownload():
     def test_get_docker(self, mock_get_files, mock_verify_dir, 
         mock_print):
         bucket_name = 'my bucket'
+        no_overwrite = True
 
-        get_docker(bucket_name)
+        get_docker(bucket_name, no_overwrite)
 
-        mock_get_files.assert_called_with(bucket_name, 'docker')
+        mock_get_files.assert_called_with(bucket_name, 'docker',
+            no_overwrite=no_overwrite)
         mock_get_files.assert_called_once()
         mock_print.assert_called_once()
         assert mock_print.mock_calls == [call()]
@@ -78,11 +82,12 @@ class TestDownload():
     def test_get_rhel(self, mock_get_files, mock_verify_dir, 
         mock_print):
         bucket_name = 'my bucket'
+        no_overwrite = True
 
-        get_rhel(bucket_name)
+        get_rhel(bucket_name, no_overwrite)
 
         mock_get_files.assert_called_with(bucket_name, 'redhat-iso',
-            dest='rhel')
+            dest='rhel', no_overwrite=no_overwrite)
         mock_get_files.assert_called_once()
         mock_print.assert_called_once()
         assert mock_print.mock_calls == [call()]
@@ -104,11 +109,12 @@ class TestDownload():
         download_docker = False
         download_rhel = False
         cur_dir = '/some/fake/dir'
-
+        no_overwrite = True
         mock_os_getcwd.return_value = cur_dir
 
         bootstrap(bucket_name, release_tag=release_tag, 
-            download_docker=download_docker, download_rhel=download_rhel)
+            download_docker=download_docker, download_rhel=download_rhel,
+            no_overwrite=no_overwrite)
 
         mock_os_getcwd.assert_called_once_with()
         mock_os_makedirs.assert_called_with('opal_artifacts', exist_ok=True)
@@ -122,12 +128,14 @@ class TestDownload():
             call('Downloading and Verifying installation scripts'),
             call('SUCCESS', colorama.Fore.GREEN)])
 
-        mock_get_images.assert_called_once_with(bucket_name, release_tag)
+        mock_get_images.assert_called_once_with(bucket_name, release_tag,
+            no_overwrite)
         mock_print.assert_has_calls(
             [call()]
         )
 
-        mock_get_scripts.assert_called_once_with(bucket_name, release_tag)
+        mock_get_scripts.assert_called_once_with(bucket_name, release_tag,
+            no_overwrite)
 
     @patch('builtins.print')
     @patch('opal_release_downloader.download.get_latest')
@@ -142,12 +150,14 @@ class TestDownload():
         download_docker = False
         download_rhel = False
         cur_dir = '/some/fake/dir'
+        no_overwrite = True
 
         mock_get_latest.return_value = release_tag
         mock_os_getcwd.return_value = cur_dir
 
         bootstrap(bucket_name, release_tag=None, 
-            download_docker=download_docker, download_rhel=download_rhel)
+            download_docker=download_docker, download_rhel=download_rhel,
+            no_overwrite=no_overwrite)
 
         mock_get_latest.assert_called_once_with(bucket_name)
         mock_os_getcwd.assert_called_once_with()
@@ -162,12 +172,14 @@ class TestDownload():
             call('Downloading and Verifying installation scripts'),
             call('SUCCESS', colorama.Fore.GREEN)])
 
-        mock_get_images.assert_called_once_with(bucket_name, release_tag)
+        mock_get_images.assert_called_once_with(bucket_name, release_tag,
+            no_overwrite)
         mock_print.assert_has_calls(
             [call()]
         )
 
-        mock_get_scripts.assert_called_once_with(bucket_name, release_tag)
+        mock_get_scripts.assert_called_once_with(bucket_name, release_tag,
+            no_overwrite)
 
 
     @patch('builtins.print')
@@ -185,11 +197,13 @@ class TestDownload():
         download_docker = True
         download_rhel = True
         cur_dir = '/some/fake/dir'
+        no_overwrite = True
 
         mock_os_getcwd.return_value = cur_dir
 
         bootstrap(bucket_name, release_tag=release_tag, 
-            download_docker=download_docker, download_rhel=download_rhel)
+            download_docker=download_docker, download_rhel=download_rhel,
+            no_overwrite=no_overwrite)
 
         mock_os_getcwd.assert_called_once_with()
         mock_os_makedirs.assert_called_with('opal_artifacts', exist_ok=True)
@@ -205,11 +219,13 @@ class TestDownload():
             call('Downloading and Verifying RHEL-8'),
             call('SUCCESS', colorama.Fore.GREEN)])
 
-        mock_get_images.assert_called_once_with(bucket_name, release_tag)
+        mock_get_images.assert_called_once_with(bucket_name, release_tag,
+            no_overwrite)
         mock_print.assert_has_calls(
             [call(), call(), call()]
         )
 
-        mock_get_docker.assert_called_once_with(bucket_name)
-        mock_get_rhel.asseret_called_once_with(bucket_name)
-        mock_get_scripts.assert_called_once_with(bucket_name, release_tag)
+        mock_get_docker.assert_called_once_with(bucket_name, no_overwrite)
+        mock_get_rhel.asseret_called_once_with(bucket_name, no_overwrite)
+        mock_get_scripts.assert_called_once_with(bucket_name, release_tag,
+            no_overwrite)

@@ -25,7 +25,7 @@ If you are using Windows and python was installed using the [python installer](h
 
 From within the python environment described in the [Environment](#environment) section, run the command:
 
-`pip install git+https://github.com/IM-USAF/opal-release-downloader.git`
+`pip install git+https://github.com/309thEDDGE/opal-release-downloader.git`
 
 ## Usage
 

@@ -81,7 +81,6 @@ def operate_on_files(root_dir: str, operator: types.FunctionType,
     fail_if_subdirs: bool=False, excluded_files: list=[],
     expected_files=[]):
     for root, dirs, files in os.walk(root_dir):
-        print(f"root: {root}, dirs: {dirs}, files: {files}")
         if fail_if_subdirs and dirs:
             cur_dir = os.path.join(os.getcwd(), root)
             raise Exception(f'unexpected directory layout in {cur_dir}')
@@ -123,9 +122,8 @@ def check_manifest(manifest, *, excluded_files=[]):
 
         operator = check_manifest_operator(files_found, tq)
         operate_on_files('.', operator, fail_if_subdirs=True, 
-            excluded_files=excluded_files, expected_files=list(expected_files.keys()))
+            excluded_files=excluded_files, expected_files=expected_files)
 
-        print(f"files_found: {files_found}")
         for k, v in files_found.items():
             if not v:
                 raise Exception(f'file "{k}" not found')

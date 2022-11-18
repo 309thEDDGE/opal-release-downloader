@@ -262,9 +262,8 @@ class TestVerify():
         mock_check_manifest_operator, mock_operate_on_files):
         manifest = 'manifest.txt'
         excluded_files = ['one.a', 'two.b']
-        expected_files = {'exp1.a': None, 'exp2.b': None}
-        files_found = {k: False for k,v in expected_files.items()}
-        expected_files_list = list(expected_files.keys())
+        expected_files = ['exp1.a', 'exp2.b']
+        files_found = {k: False for k in expected_files}
         operator = Mock()
 
         mock_f = Mock()
@@ -291,7 +290,7 @@ class TestVerify():
             total=len(expected_files))
         mock_operate_on_files.assert_called_once_with('.', operator, 
             fail_if_subdirs=True, excluded_files=excluded_files, 
-            expected_files=expected_files_list)
+            expected_files=expected_files)
 
     @patch('opal_release_downloader.verify.operate_on_files')
     @patch('opal_release_downloader.verify.check_manifest_operator')
@@ -302,9 +301,8 @@ class TestVerify():
         mock_check_manifest_operator, mock_operate_on_files):
         manifest = 'manifest.txt'
         excluded_files = ['one.a', 'two.b']
-        expected_files = {'exp1.a': None, 'exp2.b': None}
-        files_found = {k: False for k,v in expected_files.items()}
-        expected_files_list = list(expected_files.keys())
+        expected_files = ['exp1.a', 'exp2.b']
+        files_found = {k: False for k in expected_files}
         operator = Mock()
 
         mock_f = Mock()
@@ -334,7 +332,7 @@ class TestVerify():
             total=len(expected_files))
         mock_operate_on_files.assert_called_once_with('.', operator, 
             fail_if_subdirs=True, excluded_files=excluded_files, 
-            expected_files=expected_files_list)
+            expected_files=expected_files)
 
     def test_find_file_and_confirm_no_search_or_fname(self):
         glob_str = 'a.*'

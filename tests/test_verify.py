@@ -392,5 +392,103 @@ class TestVerify():
         mock_os_path.exists.assert_called_once_with(file_name)
         assert result == file_name
 
-    def test_verify_directory():
-        pass
+    def test_verify_directory_dir_not_exist(self, 
+        mock_os_getcwd, mock_os_path):
+        directory = '/home/Sprocket/files'
+        checksum = 'checksum.txt'
+        manifest = 'manifest.txt'
+        search = True
+        require_manifest = True
+        strict_checksum = True
+
+        cur_dir = '/home/other/Docs/'
+        mock_os_getcwd.return_value = cur_dir
+        mock_os_path.exists.return_value = False
+
+        with pytest.raises(Exception) as e:
+            verify_directory(directory, checksum=checksum, manifest=manifest,
+                search=search, require_manifest=require_manifest, strict_checksum=strict_checksum)
+
+        mock_os_path.exists.assert_called_once_with(directory)
+
+    def test_verify_directory_not_dir(self, mock_os_getcwd, 
+        mock_os_path):
+        directory = '/home/Sprocket/files'
+        checksum = 'checksum.txt'
+        manifest = 'manifest.txt'
+        search = True
+        require_manifest = True
+        strict_checksum = True
+
+        cur_dir = '/home/other/Docs/'
+        mock_os_getcwd.return_value = cur_dir
+        mock_os_path.exists.return_value = True
+        mock_os_path.isdir.return_value = False
+
+        with pytest.raises(Exception) as e:
+            verify_directory(directory, checksum=checksum, manifest=manifest,
+                search=search, require_manifest=require_manifest, strict_checksum=strict_checksum)
+
+        mock_os_path.exists.assert_called_once_with(directory)
+        mock_os_path.isdir.assert_called_once_with(directory)
+
+    @patch('opal_release_downloader.verify.check_checksums')
+    @patch('opal_release_downloader.verify.check_manifest')
+    @patch('opal_release_downloader.verify.find_file_and_confirm')
+    def test_verify_directory_require_manifest(self, mock_find_file, 
+        mock_check_manifest, mock_check_checksums, mock_os_getcwd, 
+        mock_os_path, mock_os_chdir):
+        directory = '/home/Sprocket/files'
+        checksum = 'checksum.txt'
+        manifest = 'manifest.txt'
+        search = True
+        require_manifest = True
+        strict_checksum = True
+
+        cur_dir = '/home/other/Docs/'
+        mock_os_getcwd.return_value = cur_dir
+        mock_os_path.exists.return_value = True
+        mock_os_path.isdir.return_value = True
+        mock_find_file.side_effect = [checksum, manifest]        
+
+        verify_directory(directory, checksum=checksum, manifest=manifest,
+            search=search, require_manifest=require_manifest, strict_checksum=strict_checksum)
+
+        mock_os_path.exists.assert_called_once_with(directory)
+        mock_os_path.isdir.assert_called_once_with(directory)
+        assert mock_os_chdir.mock_calls == [call(directory), call(cur_dir)]
+        assert mock_find_file.mock_calls == [
+            call('md5sums_*', file_name=checksum, search=search),
+            call('file_manifest_*.yml', file_name=manifest, search=search)]
+        mock_check_manifest.assert_called_once_with(manifest, 
+            excluded_files=[checksum])
+        mock_check_checksums(checksum, excluded_files=[checksum],
+            strict=strict_checksum)
+
+    @patch('opal_release_downloader.verify.check_checksums')
+    @patch('opal_release_downloader.verify.find_file_and_confirm')
+    def test_verify_directory_no_require_manifest(self, mock_find_file, 
+        mock_check_checksums, mock_os_getcwd, mock_os_path, mock_os_chdir):
+        directory = '/home/Sprocket/files'
+        checksum = 'checksum.txt'
+        manifest = 'manifest.txt'
+        search = True
+        require_manifest = False
+        strict_checksum = True
+
+        cur_dir = '/home/other/Docs/'
+        mock_os_getcwd.return_value = cur_dir
+        mock_os_path.exists.return_value = True
+        mock_os_path.isdir.return_value = True
+        mock_find_file.return_value = checksum
+
+        verify_directory(directory, checksum=checksum, manifest=manifest,
+            search=search, require_manifest=require_manifest, strict_checksum=strict_checksum)
+
+        mock_os_path.exists.assert_called_once_with(directory)
+        mock_os_path.isdir.assert_called_once_with(directory)
+        assert mock_os_chdir.mock_calls == [call(directory), call(cur_dir)]
+        mock_find_file.assert_called_once_with('md5sums_*', 
+            file_name=checksum, search=search)
+        mock_check_checksums(checksum, excluded_files=[checksum],
+            strict=strict_checksum)

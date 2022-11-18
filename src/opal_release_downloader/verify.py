@@ -191,7 +191,6 @@ def verify_directory(
         os.chdir(cur_dir)
 
 
-
 def main():
     parser = argparse.ArgumentParser('verify_opal_artifacts')
     parser.add_argument('directory', help="names of local directory to verify")

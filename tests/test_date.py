@@ -6,7 +6,7 @@ import datetime
 
 class TestDate():
 
-    @patch('datetime.datetime')
+    @patch('opal_release_downloader._date.datetime')
     def test_date(self, mock_datetime):
         tag = '2022.10.11'
         expected_value = 'x'

@@ -24,88 +24,65 @@ class TestList():
 
     @patch('botocore.config')
     @patch('boto3.client')
-    def test_list_bucket_objects_get_s3_client(self, mock_boto3, mock_botocore, 
+    def test_get_s3_client(self, mock_boto3, mock_botocore, 
         list_bucket_objects_config):
         (bucket_name, config_retval, region_name, prefix, 
             list_objects_dict) = list_bucket_objects_config
 
         mock_botocore.Config.return_value = config_retval
-
         mock_s3_client = Mock()
-        mock_s3_client.list_objects_v2.return_value = list_objects_dict
-
         mock_boto3.return_value = mock_s3_client
 
-        test_obj_dict, s3 = list_bucket_objects_get_s3_client(bucket_name, prefix=prefix, 
-            region_name=region_name)
+        s3 = get_s3_client(region_name=region_name)
 
-        mock_botocore.Config.assert_called_with(
+        mock_botocore.Config.assert_called_once_with(
             signature_version=botocore.UNSIGNED)
-        mock_botocore.Config.assert_called_once()
-
-        mock_s3_client.list_objects_v2.assert_called_with(
-            Bucket=bucket_name, Prefix=prefix)
-        mock_s3_client.list_objects_v2.assert_called_once()
-
-        mock_boto3.assert_called_once()
-        mock_boto3.assert_called_with('s3', region_name=region_name,
-            config=config_retval)
-
-        assert test_obj_dict == list_objects_dict['Contents']
+        mock_boto3.assert_called_once_with('s3', 
+            region_name=region_name, config=config_retval)
         assert mock_s3_client == s3
 
-
-    @patch('botocore.config')
-    @patch('boto3.client')
-    def test_list_bucket_objects_get_s3_client_no_objects_found(self, mock_boto3, 
-        mock_botocore, list_bucket_objects_config):
-
-        (bucket_name, config_retval, region_name, prefix, 
-            list_objects_dict) = list_bucket_objects_config
-        
-        # Modify keycount so exception is raised
-        list_objects_dict['KeyCount'] = 0
-
-        mock_botocore.Config.return_value = config_retval
-
-        mock_s3_client = Mock()
-        mock_s3_client.list_objects_v2.return_value = list_objects_dict
-
-        mock_boto3.return_value = mock_s3_client
-
-        with pytest.raises(RuntimeError):
-            list_bucket_objects_get_s3_client(bucket_name, prefix=prefix, 
-                region_name=region_name)
-
-        mock_botocore.Config.assert_called_with(
-            signature_version=botocore.UNSIGNED)
-        mock_botocore.Config.assert_called_once()
-
-        mock_s3_client.list_objects_v2.assert_called_with(
-            Bucket=bucket_name, Prefix=prefix)
-        mock_s3_client.list_objects_v2.assert_called_once()
-
-        mock_boto3.assert_called_once()
-        mock_boto3.assert_called_with('s3', region_name=region_name,
-            config=config_retval)
-
-    @patch('opal_release_downloader.list.list_bucket_objects_get_s3_client')
-    def test_list_bucket_objects(self, mock_listgets3, 
+    @patch('opal_release_downloader.list.get_s3_client')
+    def test_list_bucket_objects(self, mock_gets3, 
         list_bucket_objects_config):
 
         (bucket_name, _, region_name, prefix, 
             list_objects_dict) = list_bucket_objects_config
 
         mock_s3_client = Mock()
-        mock_listgets3.return_value = list_objects_dict['Contents'], mock_s3_client
+        mock_s3_client.list_objects_v2.return_value = list_objects_dict
+        mock_gets3.return_value = mock_s3_client
         
         test_obj_dict = list_bucket_objects(bucket_name, prefix=prefix,
             region_name=region_name)
-        
-        mock_listgets3.assert_called_once_with(bucket_name, prefix=prefix, 
-            region_name=region_name)
+        mock_s3_client.list_objects_v2.assert_called_once_with(
+            Bucket=bucket_name, Prefix=prefix)
+       
+        mock_gets3.assert_called_once_with(region_name=region_name)
         
         assert test_obj_dict == list_objects_dict['Contents']
+
+    @patch('opal_release_downloader.list.get_s3_client')
+    def test_list_bucket_objects_no_object_found(self, mock_gets3, 
+        list_bucket_objects_config):
+
+        (bucket_name, _, region_name, prefix, 
+            list_objects_dict) = list_bucket_objects_config
+
+        # Modify keycount so exception is raised
+        list_objects_dict['KeyCount'] = 0
+
+        mock_s3_client = Mock()
+        mock_s3_client.list_objects_v2.return_value = list_objects_dict
+        mock_gets3.return_value = mock_s3_client
+
+        with pytest.raises(RuntimeError):
+            list_bucket_objects(bucket_name, prefix=prefix, 
+                region_name=region_name)
+       
+        mock_s3_client.list_objects_v2.assert_called_once_with(
+            Bucket=bucket_name, Prefix=prefix)
+       
+        mock_gets3.assert_called_once_with(region_name=region_name)
 
     @patch('opal_release_downloader.list.list_bucket_objects')
     def test_get_list(self, mock_list_bucket_objects, 

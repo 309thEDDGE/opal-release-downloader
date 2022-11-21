@@ -8,7 +8,7 @@ import tqdm
 
 from ._constants import DEFAULT_REGION
 from ._display import display, error, warn
-from .list import get_latest, list_bucket_objects_get_s3_client
+from .list import get_latest, list_bucket_objects, get_s3_client
 
 def get_files(bucket_name, path_spec, *,
         region_name=DEFAULT_REGION,
@@ -26,8 +26,9 @@ def get_files(bucket_name, path_spec, *,
 
     dest = os.path.realpath(dest)
 
-    item_list, s3 = list_bucket_objects_get_s3_client(bucket_name, 
-        prefix=path_spec, region_name=region_name)
+    item_list = list_bucket_objects(bucket_name, prefix=path_spec, 
+        region_name=region_name)
+    s3 = get_s3_client(region_name=region_name)
 
     rel_dest = os.path.relpath(dest)
     print(f'Downloading files to {rel_dest}')

@@ -10,20 +10,18 @@ from ._constants import DEFAULT_REGION
 from ._date import date, date_fmt, date_tag
 from ._display import display, error
 
-def list_bucket_objects_get_s3_client(bucket_name: str, *, prefix: str='', 
-    region_name: str=DEFAULT_REGION):
+def get_s3_client(region_name: str=DEFAULT_REGION):
     s3 = boto3.client('s3', region_name=region_name,
             config=bc.config.Config(signature_version=bc.UNSIGNED))
-    obj_list = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
-    if obj_list['KeyCount'] == 0:
-        raise RuntimeError(f'No objects found in bucket {bucket_name} with prefix {prefix}')
-    return obj_list['Contents'], s3
+    return s3
 
 def list_bucket_objects(bucket_name: str, *, prefix: str='', 
     region_name: str=DEFAULT_REGION) -> dict:
-    obj_list, _ = list_bucket_objects_get_s3_client(bucket_name, prefix=prefix,
-    region_name=region_name)
-    return obj_list
+    s3 = get_s3_client(region_name=region_name)
+    obj_list = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    if obj_list['KeyCount'] == 0:
+        raise RuntimeError(f'No objects found in bucket {bucket_name} with prefix {prefix}')
+    return obj_list['Contents']
 
 def get_list(bucket_name, *, region_name=DEFAULT_REGION):
     obj_list = list_bucket_objects(bucket_name, region_name=region_name)

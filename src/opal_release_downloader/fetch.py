@@ -33,8 +33,11 @@ def get_files(bucket_name, path_spec, *,
     print(f'Downloading files to {rel_dest}')
     for it in item_list:
         local_name = prepare_local_path(dest, it, no_overwrite=no_overwrite)
-        if not (no_overwrite and os.path.exists(local_name)):
+        item_exists = os.path.exists(local_name)
+        if not (no_overwrite and item_exists):
             s3_download_with_progress(s3, bucket_name, it, local_name)
+        elif item_exists and no_overwrite:
+            print(f'Skipping download of existing file {local_name}') 
 
     
 def prepare_local_path(dest: str, s3_item: dict, no_overwrite=False):

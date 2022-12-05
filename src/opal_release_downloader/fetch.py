@@ -8,11 +8,11 @@ import tqdm
 
 from ._constants import DEFAULT_REGION
 from ._display import display, error, warn
-from .list import get_latest
+from .list import get_latest, list_bucket_objects, get_s3_client
 
 def get_files(bucket_name, path_spec, *,
         region_name=DEFAULT_REGION,
-        dest=None):
+        dest=None, no_overwrite=False):
 
     #TODO:  i think this shouldn't be so helpfull fetch.get_files(...)
     #       should always have a path_spec
@@ -26,38 +26,46 @@ def get_files(bucket_name, path_spec, *,
 
     dest = os.path.realpath(dest)
 
-    s3 = boto3.client('s3', region_name=region_name,
-            config=bc.config.Config(signature_version=bc.UNSIGNED))
-    items = s3.list_objects_v2(Bucket=bucket_name, Prefix=path_spec)
-    key_count = items['KeyCount']
-
-    if key_count == 0:
-        raise RuntimeError(f'unable to find files {bucket_name} {path_spec}')
+    item_list = list_bucket_objects(bucket_name, prefix=path_spec, 
+        region_name=region_name)
+    s3 = get_s3_client(region_name=region_name)
 
     rel_dest = os.path.relpath(dest)
     print(f'Downloading files to {rel_dest}')
-    item_list = items['Contents']
     for it in item_list:
-        key = it['Key']
-        size = it['Size']
+        local_name = prepare_local_path(dest, it, no_overwrite=no_overwrite)
+        item_exists = os.path.exists(local_name)
+        if not (no_overwrite and item_exists):
+            s3_download_with_progress(s3, bucket_name, it, local_name)
+        elif item_exists and no_overwrite:
+            print(f'Skipping download of existing file {local_name}') 
 
-        it_path = os.path.join(key.split('/')[-1])
-        local_name = os.path.realpath(os.path.join(dest, it_path))
-        local_dir = os.path.dirname(local_name)
+    
+def prepare_local_path(dest: str, s3_item: dict, no_overwrite=False):
+    key = s3_item['Key']
+    item_path = os.path.join(key.split('/')[-1])
+    local_name = os.path.realpath(os.path.join(dest, item_path))
+    local_dir = os.path.dirname(local_name)
 
-        os.makedirs(local_dir, exist_ok=True)
-        if not os.path.isdir(local_dir):
-            raise RuntimeError(f'Unable to write to {local_dir}')
+    os.makedirs(local_dir, exist_ok=True)
+    if not os.path.isdir(local_dir):
+        raise RuntimeError(f'Unable to write to {local_dir}')
 
-        if os.path.exists(local_name):
-            os.unlink(local_name)
-            warn(f'WARNING: overwriting file {local_name}')
+    if os.path.exists(local_name) and not no_overwrite:
+        os.unlink(local_name)
+        warn(f'WARNING: overwriting file {local_name}')
+    return local_name
 
-        with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=it_path) as tq:
-            def update(sz):
-                tq.update(sz)
+def s3_download_with_progress(s3_client, bucket_name: str, s3_item: dict, 
+    local_name: str):
+    s3_key = s3_item['Key']
+    size = s3_item['Size']
+    desc_path = os.path.basename(local_name)
+    with tqdm.tqdm(total=size, unit='B', unit_scale=True, desc=desc_path) as tq:
+        def update(sz):
+            tq.update(sz)
 
-            s3.download_file(bucket_name, key, local_name, Callback=update)
+        s3_client.download_file(bucket_name, s3_key, local_name, Callback=update)
 
 
 def main():

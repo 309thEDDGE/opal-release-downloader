@@ -4,6 +4,7 @@ import hashlib
 import os
 import sys
 import yaml
+import types
 
 import tqdm
 import colorama
@@ -20,7 +21,6 @@ def md5sum(filename):
         with open(filename, 'rb') as f:
             block = f.read(4096)
             bytes_read = len(block)
-
             while block:
                 hash_.update(block)
                 tq.update(bytes_read)
@@ -31,12 +31,7 @@ def md5sum(filename):
     return hash_.hexdigest()
 
 
-def check_checksums(checksum, *, excluded_files=[], strict=True):
-    """
-    notes:
-    This should run from within the directory where the checksum file and
-    rest of the files are
-    """
+def read_checksums_from_file(checksum: str) -> dict:
     sums = {}
     with open(checksum, "r") as f:
         line = f.readline()
@@ -51,27 +46,60 @@ def check_checksums(checksum, *, excluded_files=[], strict=True):
             sums[filename] = hash_
 
             line = f.readline()
+    return sums
 
+def check_checksums_operator(sums: dict, strict: bool) -> types.FunctionType:
+    def _check_checksums_operator(f: str):
+        if not f in sums:
+            if strict:
+                raise Exception(f'file "{f}" no checksum found.')
+            else:
+                warn(f'WARNING: no checksum found for "{f}"')
+                return
+
+        sum_ = md5sum(f)
+        if sum_ != sums[f]:
+            raise Exception(f'file "{f}" checksum {sum_}')
+
+    return _check_checksums_operator
+
+
+def check_checksums(checksum, *, excluded_files=[], strict=True):
+    """
+    notes:
+    This should run from within the directory where the checksum file and
+    rest of the files are
+    """
+    sums = read_checksums_from_file(checksum)
     print('verifying checksums')
-    for root, dirs, files, in os.walk('.'):
-        if dirs:
+
+    operator = check_checksums_operator(sums, strict)
+    operate_on_files('.', operator, fail_if_subdirs=True, 
+        excluded_files=excluded_files)
+
+def operate_on_files(root_dir: str, operator: types.FunctionType, 
+    fail_if_subdirs: bool=False, excluded_files: list=[],
+    expected_files=[]):
+    for root, dirs, files in os.walk(root_dir):
+        if fail_if_subdirs and dirs:
             cur_dir = os.path.join(os.getcwd(), root)
             raise Exception(f'unexpected directory layout in {cur_dir}')
-
+        
         for f in files:
             if f in excluded_files:
-                continue
+                continue 
+            if expected_files:
+                if not f in expected_files:
+                    raise Exception(f'Unexepected file "{f}" found')
+            operator(f)
 
-            if not f in sums:
-                if strict:
-                    raise Exception(f'file "{f}" no checksum found.')
-                else:
-                    warn(f'WARNING: no checksum found for "{f}"')
-                    continue
 
-            sum_ = md5sum(f)
-            if sum_ != sums[f]:
-                raise Exception(f'file "{f}" checksum {sum_}')
+def check_manifest_operator(files_found: dict, tq: tqdm.tqdm):
+    def _check_manifest_operator(f):
+        files_found[f] = True
+        tq.update()
+
+    return _check_manifest_operator
 
 
 def check_manifest(manifest, *, excluded_files=[]):
@@ -83,35 +111,48 @@ def check_manifest(manifest, *, excluded_files=[]):
     - a file is in the folder that shouldn't be there
     - a file is missing from the folder
     """
-
     with open(manifest, "r") as f:
         expected_files = yaml.load(f, Loader=yaml.SafeLoader)
 
-    with tqdm.tqdm(desc='checking_manfiest', total=len(expected_files)) as tq:
+    with tqdm.tqdm(desc='checking_manifest', total=len(expected_files)) as tq:
         files_found = {}
+
         for f in expected_files:
             files_found[f] = False
 
-        for root, dirs, files, in os.walk('.'):
-            if dirs:
-                cur_dir = os.path.join(os.getcwd(), root)
-                raise Exception(f'unexpected directory layout in {cur_dir}')
-
-            for f in files:
-                if f in excluded_files:
-                    continue
-
-                if not  f in expected_files:
-                    raise Exception(f'unexpected file "{f}" found')
-
-                files_found[f] = True
-                tq.update()
+        operator = check_manifest_operator(files_found, tq)
+        operate_on_files('.', operator, fail_if_subdirs=True, 
+            excluded_files=excluded_files, expected_files=expected_files)
 
         for k, v in files_found.items():
             if not v:
                 raise Exception(f'file "{k}" not found')
 
 
+def find_file_and_confirm(glob_str: str, file_name: str=None, 
+    search: bool=False) -> bool:
+    '''
+    Find a specific file by name or the first file in a glob
+    search and confirm the file exists. 
+
+    Assumes cwd is the search path.
+    '''
+    found_file = ''
+    if (not search) and (file_name is None):
+            raise Exception(f'File name not provided and search disabled')
+    if search and (file_name is None):
+        files = glob.glob(glob_str)
+        if len(files) != 1:
+            raise Exception('Unable to find checksum file')
+        found_file = files[0]
+    else:
+        found_file = file_name
+
+    if (not found_file) or (not os.path.exists(found_file)):
+        raise Exception(f'file {file_name} does not exist')
+    return found_file
+
+   
 def verify_directory(
         directory, *,
         checksum=None,
@@ -131,25 +172,12 @@ def verify_directory(
 
     try:
         os.chdir(directory)
-
-        if search and (checksum is None):
-            files = glob.glob('md5sums_*')
-            if len(files) != 1:
-                raise Exception('Unable to find checksum file')
-            checksum = files[0]
-
-        if (not checksum) or (not os.path.exists(checksum)):
-            raise Exception(f'checksum file {checksum} does not exist')
+        checksum = find_file_and_confirm('md5sums_*', file_name=checksum,
+            search=search)
 
         if require_manifest:
-            if search and (manifest is None):
-                files = glob.glob("file_manifest_*.yml")
-                if len(files) != 1:
-                    raise Exception('Unable to find manifest file')
-                manifest = files[0]
-
-            if (not manifest) or (not os.path.exists(manifest)):
-                raise Exception(f'manifest file {manifest} does not exist')
+            manifest = find_file_and_confirm('file_manifest_*.yml', 
+                file_name=manifest, search=search)
 
             check_manifest(manifest, excluded_files=[checksum])
             print()
@@ -159,7 +187,6 @@ def verify_directory(
 
     finally:
         os.chdir(cur_dir)
-
 
 
 def main():

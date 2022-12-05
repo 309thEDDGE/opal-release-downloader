@@ -19,13 +19,17 @@ Download and verify all artifacts required to deploy OPAL. This README also incl
 
 Installation and usage is OS-agnostic. We recommend that this package be installed and executed within a [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) environment. 
 
-If you are using Windows and python was installed using the [python installer](https://www.python.org/downloads/windows/), the option to add python to the path automatically at install time must have been used. If that option was not used and python was manually added to the path this script will likely not function as expected. Re-run the installer, choose the modify option, check the box to add python to the user path and complete the installation modification prior to the following steps. 
+If you are using Windows and python was installed using the [python installer](https://www.python.org/downloads/windows/), the option to add python to the path automatically at install time must have been used. If that option was not used and python was manually added to the path, this script will likely not function as expected. Re-run the installer, choose the modify option, check the box to add python to the user path and complete the installation modification prior to the following steps. 
 
 ## Install
 
 From within the python environment described in the [Environment](#environment) section, run the command:
 
 `pip install git+https://github.com/309thEDDGE/opal-release-downloader.git`
+
+_Note: On windows be sure to use_ `python -m pip install ...`.
+
+This command will pull the source from github, then build and install the python package, including dependencies. It will place several scripts on your path in the active environment. Scripts are described in [Download and verify artifacts](#download-and-validate-artifacts).
 
 ## Usage
 

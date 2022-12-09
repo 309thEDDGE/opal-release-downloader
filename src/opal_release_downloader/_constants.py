@@ -1,1 +1,1 @@
-DEFAULT_REGION = 'us-gov-west-1'
+DEFAULT_REGION = "us-gov-west-1"

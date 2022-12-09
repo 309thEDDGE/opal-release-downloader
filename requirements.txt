@@ -1,7 +1,0 @@
-awscli
-boto3
-colorama
-pyyaml
-requests
-tqdm
-urllib3

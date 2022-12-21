@@ -59,14 +59,18 @@ This command will pull the source from github, then build and install the python
 * use the rhel-*-x86_64-dvd.iso found in the `rhel` directory
 * Install in a VM (preferred) or bare metal
 * Minimum installation options:
-  * "Software Selection":
-    * "Base Environment": Server with GUI
-    * "Additional software for Selected Environment":
-      * Windows File Server
-      * Guest Agents
-      * Network File System Client
-      * Development Tools
-      * Headless Management
+  * Memory:  
+    * Disk Space: > 50GB  
+    * RAM: > 8GB   
+  * On first boot up using the `rhel-*-x86_64-dvd.iso`, when you get to the "Installation Summary Page" include the following selections.
+    * "Software Selection":
+      * "Base Environment": Server with GUI
+      * "Additional software for Selected Environment":
+        * Windows File Server
+        * Guest Agents
+        * Network File System Client
+        * Development Tools
+        * Headless Management
   * "Root Password":
     * Set a root password
   * "Add User":
@@ -97,11 +101,21 @@ This command will pull the source from github, then build and install the python
   
 ### Add Certificates
 
+Note: Certificates will not need to be generated when deploying locally.
+
 Certificates will either need to be generated with a wildcard following the format: `*[.opal]<dns_base>`.
 
 * Name the public and private certificates `tls.crt` and `tls.key`, respectively
 * Place the certificates in `opal-ops/docker-compose/keycloak/certs/<deployment_label>`
 * Additionally, copy the certificates to `opal-ops/docker-compose/jupyterhub/certs/selfsigned/` as `jhubssl.crt` and `jhubssl.key`
+
+### Update etc/hosts
+Update the `/etc/hosts` file based off instructions given when running the `install-opal` script. For example, when deploying locally, these additions need to be inserted into `/etc/hosts`.  
+```
+127.0.0.1 keycloak
+127.0.0.1 minio
+127.0.0.1 opal
+```
 
 ### Instantiate OPAL
 
@@ -112,7 +126,21 @@ Certificates will either need to be generated with a wildcard following the form
 
 Follow the instructions in this section to verify that OPAL is running. These steps are only valid if all the steps in the [deployment](#opal-deployment) were completed successfully.
 
-Depending on [configuration](#configure-deployment) URLs for various services will be in the form: `https://<service_name>[.opal]<dns_base>`
+Depending on [configuration](#configure-deployment) URLs for various services will be in the form: `https://<service_name>[.opal]<dns_base>`.
+
+If deploying locally and the following insertions were added to  `/etc/hosts`.  
+```
+127.0.0.1 keycloak
+127.0.0.1 minio
+127.0.0.1 opal
+```
+then the URLs associated with OPAL and Minio are:
+```
+https://opal
+https://minio
+```
+
+Default credentials for local deployment. `User = opaluser, Password = opalpassword`
 ### Keycloak
 
 * wip: execute keycloak health check script

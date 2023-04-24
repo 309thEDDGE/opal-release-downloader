@@ -76,6 +76,17 @@ This command will pull the source from github, then build and install the python
   * "Add User":
     * Create an administrator user account
 
+#### Package requirements if not installing from provided RHEL iso or using a different linux distribution
+
+```
+git>=2.27.0      
+tmux>=2.7      
+bzip2>=1.0.6       
+xz>=5.2.4          
+iptables>=1.8.4       
+bc>=1.07.1
+```
+
 ### Acquire Artifacts
 
 * Copy all artifacts into a directory on the RHEL file system

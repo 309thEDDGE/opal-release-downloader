@@ -76,6 +76,17 @@ This command will pull the source from github, then build and install the python
   * "Add User":
     * Create an administrator user account
 
+#### Package requirements if not installing from provided RHEL iso or using a different linux distribution
+
+```
+git>=2.27.0      
+tmux>=2.7      
+bzip2>=1.0.6       
+xz>=5.2.4          
+iptables>=1.8.4       
+bc>=1.07.1
+```
+
 ### Acquire Artifacts
 
 * Copy all artifacts into a directory on the RHEL file system
@@ -153,3 +164,4 @@ Default credentials for local deployment. `User = opaluser, Password = opalpassw
 
 * From the jupterlab interface, open a new terminal tab and run `/bin/bash /home/jovyan/opal/devops-software/test_all.bash`. If all tests pass, the catalog is working as intended.
 * From the jupyterlab interface, click file -> Hub control panel. From the home page, click services -> Opal Catalog. This should redirect you to the catalog webpage. Click "Sign in with Jupyterhub", and the catalog should populate
+

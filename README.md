@@ -1,167 +1,141 @@
+# OPAL Release Downloader and Deployment Guide
 
-# opal-release-downloader
+## Overview
 
-Download and verify all artifacts required to deploy OPAL. This README also includes the steps that must be followed to complete an OPAL deployment, broadly:
+This guide provides step-by-step instructions to download, verify, and deploy OPAL.
 
-* [Download and verify artifacts](#download-and-validate-artifacts)
-* [Prepare a Red Hat Enterprise Linux (RHEL) target with included ISO](#install-red-hat-linux)
-* [Acquire](#acquire-artifacts), [extract, and verify](#validate-artifacts) artifacts within RHEL instance
-* [Install docker](#install-docker) and [load OPAL docker images](#load-docker-images)
-* [Configure](#configure-deployment) and [instantiate OPAL](#instantiate-opal)
+## Prerequisites
 
-## Environment 
+### Environment Requirements
 
-* Open internet connection
-* Python3.9+ with
-  * pip
-  * setuptools >= 43
-* git
+- **Operating System:** Ubuntu (via WSL or standalone Linux) or macOS
+- **Internet Connection:** Required for downloading artifacts
+- **Python:** Version 3.9+
+  - Must include `pip` and `setuptools >= 43`
+- **Git**: Installed and available in the system PATH
+- **Docker & Docker Compose:** Installed and running
 
-Installation and usage is OS-agnostic. We recommend that this package be installed and executed within a [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) environment. 
+> **Note for Windows Users:** If using WSL, ensure you have installed WSL2 and Ubuntu. Install Docker Desktop with WSL integration enabled.
 
-If you are using Windows and python was installed using the [python installer](https://www.python.org/downloads/windows/), the option to add python to the path automatically at install time must have been used. If that option was not used and python was manually added to the path, this script will likely not function as expected. Re-run the installer, choose the modify option, check the box to add python to the user path and complete the installation modification prior to the following steps. 
+## Installation
 
-## Install
+### 1. Setup Python Environment
 
-From within the python environment described in the [Environment](#environment) section, run the command:
+We recommend using a virtual environment:
 
-`pip install git+https://github.com/309thEDDGE/opal-release-downloader.git`
+```sh
+python -m venv opal_env
+source opal_env/bin/activate  # On Windows, use `opal_env\Scripts\activate`
+```
 
-_Note: On windows be sure to use_ `python -m pip install ...`.
+### 2. Install OPAL Release Downloader
 
-This command will pull the source from github, then build and install the python package, including dependencies. It will place several scripts on your path in the active environment. Scripts are described in [Download and verify artifacts](#download-and-validate-artifacts).
+```sh
+pip install git+https://github.com/309thEDDGE/opal-release-downloader.git
+```
 
-## Usage
+## Download and Verify OPAL Artifacts
 
-### Runtime arguments: 
-
-* must be obtained from OPAL developers prior to use
-* S3 bucket name in which OPAL artifacts reside, referred to as `<bucket name>`
-* Release tag of available OPAL artifacts version, in the form of a date _YYYY.MM.DD_, referred to as `<release_tag>`
-
-### Download and validate artifacts:
-
-* Navigate to an empty directory in which OPAL artifacts shall reside
-* (if applicable) Ensure that the active environment is the one in which opal-release-downloader was installed
-* View the help menu of the download script: `download_opal_artifacts -h`
-* Execute the download script and pass arguments as described in the help menu: `download_opal_artifacts <bucket_name> ...`
-* `<bucket_name>` can be omitted to automatically grab the latest tag
-* See `list_opal_artifacts -h` to view available tags
-* Do not use the flags `--no-docker` or `--no-rhel` unless you are an expert
-* Some of the compressed images are several GBs in size. The download and verification process can take over an hour depending on internet connection and computer performance.
-* If the command runs without error, the `opal_artifacts` directory contains all of the artifacts required to deploy OPAL
+1. **Navigate to an empty directory** where OPAL artifacts will be stored.
+2. **Ensure you are in the correct Python environment.**
+3. **View script options:**
+   ```sh
+   download_opal_artifacts -h
+   ```
+4. **Download artifacts:**
+   ```sh
+   download_opal_artifacts opal-deployment-artifacts
+   ```
+   This downloads and verifies required files into `opal_artifacts/`.
 
 ## OPAL Deployment
 
-### Install Red Hat Linux
+### 1. Copy Artifacts
 
-* Copy all artifacts from the `opal_artifacts` directory (previous section) to the destination network
-* use the rhel-*-x86_64-dvd.iso found in the `rhel` directory
-* Install in a VM (preferred) or bare metal
-* Minimum installation options:
-  * Memory:  
-    * Disk Space: > 50GB  
-    * RAM: > 8GB   
-  * On first boot up using the `rhel-*-x86_64-dvd.iso`, when you get to the "Installation Summary Page" include the following selections.
-    * "Software Selection":
-      * "Base Environment": Server with GUI
-      * "Additional software for Selected Environment":
-        * Windows File Server
-        * Guest Agents
-        * Network File System Client
-        * Development Tools
-        * Headless Management
-  * "Root Password":
-    * Set a root password
-  * "Add User":
-    * Create an administrator user account
+Move `opal_artifacts/` to your target deployment machine.
 
-#### Package requirements if not installing from provided RHEL iso or using a different linux distribution
+### 2. Install OPAL
 
-```
-git>=2.27.0      
-tmux>=2.7      
-bzip2>=1.0.6       
-xz>=5.2.4          
-iptables>=1.8.4       
-bc>=1.07.1
+Run the installer script:
+
+```sh
+cd opal_artifacts
+sudo /bin/bash install-opal.sh
 ```
 
-### Acquire Artifacts
+The script will prompt for environment-specific details:
 
-* Copy all artifacts into a directory on the RHEL file system
-* Ensure that all artifacts exist inside a single directory
-* Expected directory structure:
-  - docker/
-  - images/
-  - load-docker-images.sh
-  - unpacker.sh
-  - install-opal.sh
+- **Deployment Name:** (e.g., `acceptance`, `cui`)
+- **Banner Color:** Enter an HTML color (e.g., `Blue`)
+- **Banner Text:** Network name or classification markings
 
-**Remaining sections describe commands or actions to be executed within RHEL.**
+### 3. Update Hosts File
 
-### Install OPAL
+If services do not resolve, modify your `/etc/hosts` file:
 
-* Navigate to the artifact directory
-* Execute the opal installer script: `sudo /bin/bash install-opal.sh`
-  * This will validate artifact checksums one final time, install docker, unzip/load the images, and begin configuration
-  * The configuration stage will ask several questions to tailor OPAL for your environment.
-  * For future reference, note the value chosen for `<dns_base>`, the base name for the DNS which will be appended to the service name
-* If there are no error messages and the script executes to completion, OPAL will be installed and ready to run without ssl.
-  * To enable ssl, you will need to provide your own certificates.
-  
-### Add Certificates
-
-Note: Certificates will not need to be generated when deploying locally.
-
-Certificates will either need to be generated with a wildcard following the format: `*[.opal]<dns_base>`.
-
-* Name the public and private certificates `tls.crt` and `tls.key`, respectively
-* Place the certificates in `opal-ops/docker-compose/keycloak/certs/<deployment_label>`
-* Additionally, copy the certificates to `opal-ops/docker-compose/jupyterhub/certs/selfsigned/` as `jhubssl.crt` and `jhubssl.key`
-
-### Update etc/hosts
-Update the `/etc/hosts` file based off instructions given when running the `install-opal` script. For example, when deploying locally, these additions need to be inserted into `/etc/hosts`.  
-```
-127.0.0.1 keycloak
-127.0.0.1 minio
-127.0.0.1 opal
+```sh
+echo "127.0.0.1 minio.127.0.0.1.nip.io" | sudo tee -a /etc/hosts
+echo "127.0.0.1 jupyterhub.127.0.0.1.nip.io" | sudo tee -a /etc/hosts
+echo "127.0.0.1 keycloak.127.0.0.1.nip.io" | sudo tee -a /etc/hosts
 ```
 
-### Instantiate OPAL
+> **For WSL Users:** Modify `/etc/hosts` inside WSL, not Windows.
 
-* Change directory to the location of the configured start script (script looks for `.env.secrets` in cwd): `cd ./opal-ops/docker-compose`
-* Run the OPAL utility with the `start` option: `/bin/bash ./<deployment_label>_util.sh start`. This step builds several images, and may take a while on first run
+### 4. Start OPAL Services
 
-## Verify Deployment
-
-Follow the instructions in this section to verify that OPAL is running. These steps are only valid if all the steps in the [deployment](#opal-deployment) were completed successfully.
-
-Depending on [configuration](#configure-deployment) URLs for various services will be in the form: `https://<service_name>[.opal]<dns_base>`.
-
-If deploying locally and the following insertions were added to  `/etc/hosts`.  
-```
-127.0.0.1 keycloak
-127.0.0.1 minio
-127.0.0.1 opal
-```
-then the URLs associated with OPAL and Minio are:
-```
-https://opal
-https://minio
+```sh
+cd opal-ops/docker-compose
+/bin/bash ./<deployment_label>_util.sh start
 ```
 
-Default credentials for local deployment. `User = opaluser, Password = opalpassword`
-### Keycloak
+### 5. Verify Deployment
 
-* wip: execute keycloak health check script
+Access services in a browser:
 
-### JupyterHub
+- **OPAL:** [https://opal](https://opal)
+- **Minio:** [https://minio](https://minio)
+- **JupyterHub:** `opal.<dns_base>` (replace `<dns_base>` with your configuration)
 
-* From within the VM, open the browser and navigate to `opal.<dns_base>`
+## Daily Usage: Starting OPAL After Installation
 
-### OPAL Catalog
+Once OPAL is installed, you can start it for daily use by running:
 
-* From the jupterlab interface, open a new terminal tab and run `/bin/bash /home/jovyan/opal/devops-software/test_all.bash`. If all tests pass, the catalog is working as intended.
-* From the jupyterlab interface, click file -> Hub control panel. From the home page, click services -> Opal Catalog. This should redirect you to the catalog webpage. Click "Sign in with Jupyterhub", and the catalog should populate
+```sh
+cd opal-ops/docker-compose
+/bin/bash ./<deployment_label>_util.sh start
+```
 
+If OPAL is already running, you may restart services with:
+
+```sh
+/bin/bash ./<deployment_label>_util.sh restart
+```
+
+To stop OPAL services:
+
+```sh
+/bin/bash ./<deployment_label>_util.sh stop
+```
+
+## Troubleshooting
+
+### Stop & Remove Running Containers
+
+```sh
+docker ps -q | xargs docker stop  # Stop all running containers
+docker system prune -af           # Remove unused containers, images, and volumes
+```
+
+### Restart Docker
+
+```sh
+sudo systemctl restart docker
+```
+
+### Check Logs
+
+```sh
+docker logs <container_id>
+```
+
+---
